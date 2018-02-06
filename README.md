@@ -17,27 +17,27 @@ We'll set these things up in that order!
 1. First, install the PostgreSQL DB server on your machine. Depending on your machine, follow the instructions here to install <b>version 9.5 or 9.6</b>:
   * [macOS](https://www.codementor.io/engineerapart/getting-started-with-postgresql-on-mac-osx-are8jcopb)
   * [Windows](https://www.postgresql.org/download/windows/)
-2. When you install PostgreSQL, make sure to create a database called "webdna" by running the following commands as a superuser in the psql prompt:
+2. When you install PostgreSQL, make sure to create a database called "webdna" by running the following commands as a superuser in the psql prompt:<br>
 ```
 CREATE DATABASE webdna;
 ```
-3. We will then create a "schema" to keep all of our WebDNA tables organized. Run:
+3. We will then create a "schema" to keep all of our WebDNA tables organized. Run:<br>
 ```
 CREATE SCHEMA webdna;
 ```
-4. Now, run the following command to support UUIDs on this database:
+4. Now, run the following command to support UUIDs on this database:<br>
 ```
 CREATE EXTENSION "uuid-ossp";
 ```
-5. Create a role (i.e. a "user") on your PSQL database called "django_server" by running the following command as a superuser in the psql prompt:
+5. Create a role (i.e. a "user") on your PSQL database called "django_server" by running the following command as a superuser in the psql prompt:<br>
 ```
 CREATE ROLE django_server WITH LOGIN PASSWORD 'dJAngO#SerVe!!!Pa$#!1*';
 ```
-After that, run the following command to grant this user permissions to modify databases
+After that, run the following command to grant this user permissions to modify databases<br>
 ```
 GRANT ALL PRIVILEGES ON DATABASE webdna TO django_server;
 ```
-Finally, grant usage of the webdna schema to the django_server user
+Finally, grant usage of the webdna schema to the django_server user<br>
 ```
 GRANT USAGE ON SCHEMA webdna TO django_server;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA webdna TO django_server;
