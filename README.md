@@ -33,6 +33,10 @@ After that, run the following command to grant this user permissions to modify d
 ```
 GRANT ALL PRIVILEGES ON DATABASE webdna TO django_server;
 ```
+Finally, grant usage of the webdna schema to the django_server user
+```
+GRANT USAGE ON SCHEMA webdna TO django_server;
+```
 5. Refer to the database definitions in the [WebDNA Database Definitions Repository](https://gitlab.com/webdna/database-definition).
   You'll need to run the commands in those database definition files in the database according to the README in that repository. Continue with the steps here once you've done that.
 
