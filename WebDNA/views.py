@@ -5,6 +5,7 @@ from rest_framework import status
 from .models import User
 from .serializers import UserSerializer
 
+
 # /api/users
 class UserList(APIView):
 

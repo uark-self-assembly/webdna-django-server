@@ -5,7 +5,6 @@ class User(models.Model):
     class Meta:
         db_table = '"webdna"."user"'
 
-
     id = models.UUIDField(primary_key=True, unique=True)
     username = models.CharField(max_length=128, unique=True)
     email = models.CharField(max_length=128, unique=True)
