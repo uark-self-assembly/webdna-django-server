@@ -25,7 +25,11 @@ CREATE DATABASE webdna;
 ```
 CREATE SCHEMA webdna;
 ```
-4. Create a role (i.e. a "user") on your PSQL database called "django_server" by running the following command as a superuser in the psql prompt:
+4. Now, run the following command to support UUIDs on this database:
+```
+CREATE EXTENSION "uuid-ossp";
+```
+5. Create a role (i.e. a "user") on your PSQL database called "django_server" by running the following command as a superuser in the psql prompt:
 ```
 CREATE ROLE django_server WITH LOGIN PASSWORD 'dJAngO#SerVe!!!Pa$#!1*';
 ```
@@ -33,7 +37,7 @@ After that, run the following command to grant this user permissions to modify d
 ```
 GRANT ALL PRIVILEGES ON DATABASE webdna TO django_server;
 ```
-5. Refer to the database definitions in the [WebDNA Database Definitions Repository](https://gitlab.com/webdna/database-definition).
+6. Refer to the database definitions in the [WebDNA Database Definitions Repository](https://gitlab.com/webdna/database-definition).
   You'll need to run the commands in those database definition files in the database according to the README in that repository. Continue with the steps here once you've done that.
 
 ### Django API
@@ -45,9 +49,13 @@ Well, to be honest, PostgreSQL was the hard part, because everybody has a differ
 4. Go to the "Project: webdna_server" tab, then click "Project Interpreter".
 5. If you don't have a project interpreter selected at the top, go ahead and select the Python interpreter on your system.
 6. Click the green "+" button and search for/install the following packages:
+  * Django
   * djangorestframework
   * psycopg2
-7. All set! You should be able to click the big green "Run" button at the top. Run a sample command in [Postman](https://www.getpostman.com/):
+7. Create a new configuration by clicking the "Configurations" drop-down in the top right.
+  * In the configuration window, click the "+" on the far left and select "Django server".
+  * Then, change the "Host" to "localhost". I would also name the configuration something pretty, like "Run Server".
+8. All set! You should be able to click the big green "Run" button at the top right. Run a sample command in [Postman](https://www.getpostman.com/):
 
 <img src="https://i.imgur.com/UEM00Kd.png" alt="Postman Example" style="width: 600px;" align="middle"/>
 
