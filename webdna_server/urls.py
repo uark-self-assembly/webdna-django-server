@@ -20,7 +20,8 @@ from WebDNA import views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^api/users/', views.UserList.as_view())
+    url(r'^api/users/', views.UserList.as_view()),
+    url(r'^api/projects/', views.ProjectList.as_view())
 ]
 
 url_patterns = format_suffix_patterns(urlpatterns)

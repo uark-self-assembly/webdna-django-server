@@ -17,3 +17,10 @@ class User(models.Model):
 class Project(models.Model):
     class Meta:
         db_table = '"webdna"."project"'
+
+    id = models.UUIDField(primary_key=True, unique=True)
+    user_id = models.UUIDField(primary_key=True, unique=True)
+    name = models.CharField(max_length=128)
+    data_file = models.CharField(max_length=128)
+    created_on = models.DateTimeField()
+
