@@ -35,4 +35,11 @@ def login(request):
         return ErrorResponse.make(status=status.HTTP_400_BAD_REQUEST, message=INVALID_BODY)
 
     login_body = serialized_body.data
-    return Response(login_body)
+
+    # find user with supplied username
+    found_user = User.objects.get(username=login_body['username'])
+    print(found_user)
+
+    serializer = UserSerializer(data=found_user)
+
+    return ObjectResponse.make(serializer.data)

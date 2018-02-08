@@ -1,9 +1,12 @@
 from django.db import models
+from .serializers import *
+
 
 # Create your models here.
 class User(models.Model):
     class Meta:
         db_table = '"webdna"."user"'
+        serializer = UserSerializer
 
     id = models.UUIDField(primary_key=True, unique=True)
     username = models.CharField(max_length=128, unique=True)
