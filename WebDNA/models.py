@@ -24,3 +24,7 @@ class Project(models.Model):
     data_file = models.CharField(max_length=128)
     created_on = models.DateTimeField()
 
+
+class Login(models.Model):
+    username = models.CharField(max_length=128)
+    password = models.CharField(max_length=128)

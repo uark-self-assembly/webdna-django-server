@@ -1,6 +1,5 @@
 from rest_framework import serializers
-from .models import User
-from .models import Project
+from .models import *
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -13,3 +12,9 @@ class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = '__all__'
+
+
+class LoginSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Login
+        fields = "__all__"
