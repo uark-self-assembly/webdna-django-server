@@ -13,3 +13,7 @@ class User(models.Model):
     password = models.CharField(max_length=128)
     created_on = models.DateTimeField()
 
+
+class Project(models.Model):
+    class Meta:
+        db_table = '"webdna"."project"'
