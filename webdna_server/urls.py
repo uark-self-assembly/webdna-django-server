@@ -25,3 +25,4 @@ urlpatterns = [
 ]
 
 url_patterns = format_suffix_patterns(urlpatterns)
+
