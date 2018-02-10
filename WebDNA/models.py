@@ -1,12 +1,10 @@
 from django.db import models
-from .serializers import *
 
 
 # Create your models here.
 class User(models.Model):
     class Meta:
         db_table = '"webdna"."user"'
-        serializer = UserSerializer
 
     id = models.UUIDField(primary_key=True, unique=True)
     username = models.CharField(max_length=128, unique=True)
@@ -26,8 +24,3 @@ class Project(models.Model):
     name = models.CharField(max_length=128)
     data_file = models.CharField(max_length=128)
     created_on = models.DateTimeField()
-
-
-class Login(models.Model):
-    username = models.CharField(max_length=128)
-    password = models.CharField(max_length=128)
