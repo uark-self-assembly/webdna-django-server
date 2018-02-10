@@ -1,4 +1,5 @@
 from rest_framework.response import Response
+from .util.jwt_util import *
 
 
 class ErrorResponse:
@@ -19,6 +20,21 @@ class ObjectResponse:
             'status': status,
             'message': message,
             'response': obj
+        }
+
+        return Response(data=response)
+
+
+class AuthenticationResponse:
+    @staticmethod
+    def make(user):
+        response = {
+            'status': 200,
+            'message': 'authenticated',
+            'response': {
+                'user': user,
+                'token': encode(user)
+            }
         }
 
         return Response(data=response)

@@ -1,4 +1,3 @@
-import django.core
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -48,6 +47,6 @@ def login(request):
 
     if check_password(login_body['password'], found_user.password):
         user_serializer = UserSerializer(instance=found_user)
-        return ObjectResponse.make(user_serializer.data)
+        return AuthenticationResponse.make(user_serializer.data)
     else:
         return ErrorResponse.make(status=status.HTTP_400_BAD_REQUEST, message=INVALID_PASSWORD)
