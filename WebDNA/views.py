@@ -7,6 +7,7 @@ from .models import *
 from .serializers import *
 from .responses import *
 from .messages import *
+from .util.password_util import *
 
 
 # /api/users
@@ -44,6 +45,9 @@ def login(request):
         return ErrorResponse.make(status=status.HTTP_404_NOT_FOUND, message=USER_NOT_FOUND)
 
     found_user = fetched[0]
-    user_serializer = UserSerializer(instance=found_user)
 
-    return ObjectResponse.make(user_serializer.data)
+    if check_password(login_body['password'], found_user.password):
+        user_serializer = UserSerializer(instance=found_user)
+        return ObjectResponse.make(user_serializer.data)
+    else:
+        return ErrorResponse.make(status=status.HTTP_400_BAD_REQUEST, message=INVALID_PASSWORD)
