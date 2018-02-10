@@ -14,7 +14,6 @@ class ProjectSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class LoginSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Login
-        fields = "__all__"
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=128)
+    password = serializers.CharField(max_length=128)

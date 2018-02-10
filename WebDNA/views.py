@@ -1,4 +1,4 @@
-from django.shortcuts import render
+import django.core
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -37,9 +37,13 @@ def login(request):
     login_body = serialized_body.data
 
     # find user with supplied username
-    found_user = User.objects.get(username=login_body['username'])
-    print(found_user)
+    queryset = User.objects.all()
+    fetched = queryset.filter(username=login_body['username'])
 
-    serializer = UserSerializer(data=found_user)
+    if not fetched:
+        return ErrorResponse.make(status=status.HTTP_404_NOT_FOUND, message=USER_NOT_FOUND)
 
-    return ObjectResponse.make(serializer.data)
+    found_user = fetched[0]
+    user_serializer = UserSerializer(instance=found_user)
+
+    return ObjectResponse.make(user_serializer.data)

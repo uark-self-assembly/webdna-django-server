@@ -16,9 +16,9 @@ class ObjectResponse:
     @staticmethod
     def make(obj, status=200, message="success"):
         response = {
-            'response': obj,
             'status': status,
-            'message': message
+            'message': message,
+            'response': obj
         }
 
         return Response(data=response)
