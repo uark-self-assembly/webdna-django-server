@@ -7,6 +7,12 @@ from .messages import *
 from .util.password_util import *
 from django.http import HttpResponse, JsonResponse
 
+# NOTE: It is best practice to keep all validation (field, class, etc.) in serializers.py
+# A view should ideally call serializer validation and return responses based on the validation result
+# Refer to .register for an example of a good view definition
+# Refer to RegistrationSerializer in serializers.py and User in models.py
+# for an example of how to implement custom and default field validation for objects
+
 
 # /api/users
 class UserList(APIView):
@@ -57,7 +63,7 @@ def register(request):
     serialized_body = RegistrationSerializer(data=request.data)
     if serialized_body.is_valid():
         serialized_body.save()
-        return JsonResponse(serialized_body.data, status=201)
+        return JsonResponse(serialized_body.data, status=status.HTTP_201_CREATED)
 
     return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
 

@@ -24,15 +24,15 @@ class LoginSerializer(serializers.Serializer):
 
 class RegistrationSerializer(serializers.Serializer):
     class Meta:
-        model = UserRegistration
+        model = User
         fields = ('username', 'email', 'first_name', 'last_name', 'password')
         write_only_fields = 'password'
 
     username = serializers.CharField(
-        validators=[UniqueValidator(queryset=UserRegistration.objects.all())]
+        validators=[UniqueValidator(queryset=User.objects.all())]
     )
     email = serializers.EmailField(
-        validators=[UniqueValidator(queryset=UserRegistration.objects.all())]
+        validators=[UniqueValidator(queryset=User.objects.all())]
     )
     first_name = serializers.CharField(max_length=30)
     last_name = serializers.CharField(max_length=30)
@@ -47,7 +47,7 @@ class RegistrationSerializer(serializers.Serializer):
         return password
 
     def create(self, validated_data):
-        user = UserRegistration.objects.create(
+        user = User.objects.create(
             username=validated_data['username'],
             email=validated_data['email'],
             first_name=validated_data['first_name'],
