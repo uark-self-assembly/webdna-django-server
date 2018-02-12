@@ -3,9 +3,6 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from .serializers import *
 from .responses import *
-from .messages import *
-from .util.password_util import *
-from django.http import HttpResponse, JsonResponse
 
 # NOTE: It is best practice to keep all validation (field, class, etc.) in serializers.py
 # A view should ideally call serializer validation and return responses based on the validation result
@@ -50,6 +47,5 @@ def register(request):
     if serialized_body.is_valid():
         user_serializer = UserSerializer(instance=serialized_body.save())
         return RegistrationResponse.make(user_serializer.data)
-        # return JsonResponse(serialized_body.data, status=status.HTTP_201_CREATED)
 
     return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)

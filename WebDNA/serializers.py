@@ -69,8 +69,17 @@ class RegistrationSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=128)
 
     def validate_password(self, password):
-        pattern = re.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$")
-        if not pattern.match(password):
+        flag = False
+        if len(str(password)) < 8:
+            flag = True
+        elif re.search('[0-9]', str(password)) is None:
+            flag = True
+        elif re.search('[a-z]', str(password)) is None:
+            flag = True
+        elif re.search('[A-Z]', str(password)) is None:
+            flag = True
+
+        if flag:
             raise serializers.ValidationError(INVALID_PASSWORD_FORMAT)
 
         return password
