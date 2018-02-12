@@ -1,5 +1,6 @@
 from django.db import models
 
+
 # Create your models here.
 class User(models.Model):
     class Meta:
@@ -23,4 +24,3 @@ class Project(models.Model):
     name = models.CharField(max_length=128)
     data_file = models.CharField(max_length=128)
     created_on = models.DateTimeField()
-
