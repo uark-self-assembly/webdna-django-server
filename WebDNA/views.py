@@ -1,12 +1,11 @@
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
-from .models import *
 from .serializers import *
 from .responses import *
 from .messages import *
 from .util.password_util import *
+from django.http import HttpResponse, JsonResponse
 
 
 # /api/users
@@ -50,3 +49,15 @@ def login(request):
         return AuthenticationResponse.make(user_serializer.data)
     else:
         return ErrorResponse.make(status=status.HTTP_400_BAD_REQUEST, message=INVALID_PASSWORD)
+
+
+# /api/register
+@api_view(['POST'])
+def register(request):
+    serialized_body = RegistrationSerializer(data=request.data)
+    if serialized_body.is_valid():
+        serialized_body.save()
+        return JsonResponse(serialized_body.data, status=201)
+
+    return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+

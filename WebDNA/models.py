@@ -8,11 +8,22 @@ class User(models.Model):
 
     id = models.UUIDField(primary_key=True, unique=True)
     username = models.CharField(max_length=128, unique=True)
-    email = models.CharField(max_length=128, unique=True)
+    email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     password = models.CharField(max_length=128)
     created_on = models.DateTimeField()
+
+
+class UserRegistration(models.Model):
+    class Meta:
+        db_table = '"webdna"."user"'
+
+    username = models.CharField(max_length=128, unique=True)
+    email = models.EmailField(unique=True)
+    first_name = models.CharField(max_length=30)
+    last_name = models.CharField(max_length=30)
+    password = models.CharField(max_length=128)
 
 
 class Project(models.Model):
