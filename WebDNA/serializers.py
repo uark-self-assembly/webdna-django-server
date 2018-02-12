@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from .models import *
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password, check_password
+from .messages import *
 import re
 
 
@@ -18,8 +19,37 @@ class ProjectSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
+    class Meta:
+        model = User
+        fields = ('username', 'password')
+
     username = serializers.CharField(max_length=128)
     password = serializers.CharField(max_length=128)
+
+    fetched_user = None
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
+
+    def validate(self, login_data):
+        username = login_data['username']
+        password = login_data['password']
+
+        query_set = User.objects.all()
+        fetched = query_set.filter(username=username)
+        if not fetched:
+            raise serializers.ValidationError(USER_NOT_FOUND)
+
+        user_object = fetched[0]
+        if not check_password(password, user_object.password):
+            raise serializers.ValidationError(INVALID_PASSWORD)
+
+        self.fetched_user = user_object
+
+        return login_data
 
 
 class RegistrationSerializer(serializers.Serializer):
@@ -41,8 +71,7 @@ class RegistrationSerializer(serializers.Serializer):
     def validate_password(self, password):
         pattern = re.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$")
         if not pattern.match(password):
-            raise serializers.ValidationError("password must be at least 8 characters, "
-                                              "and have at least one uppercase, lowercase, and numeral character")
+            raise serializers.ValidationError(INVALID_PASSWORD_FORMAT)
 
         return password
 
@@ -57,3 +86,6 @@ class RegistrationSerializer(serializers.Serializer):
 
         user.save()
         return user
+
+    def update(self, instance, validated_data):
+        pass
