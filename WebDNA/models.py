@@ -22,7 +22,8 @@ class Project(models.Model):
         db_table = '"webdna"."project"'
 
     id = models.UUIDField(primary_key=True, unique=True)
-    user_id = models.UUIDField(primary_key=True, unique=True)
+    user_id = models.UUIDField(unique=True)
     name = models.CharField(max_length=128)
     data_file = models.CharField(max_length=128)
     created_on = models.DateTimeField()
+    job_running = models.BooleanField()
