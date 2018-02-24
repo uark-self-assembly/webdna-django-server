@@ -73,8 +73,7 @@ def ensure_user_script_path(user_UUID, script_UUID):
 
 def ensure_community_script_path(script_UUID):
     community_scripts_path = os.path.dirname(os.path.realpath(__file__)) + r'/../data/community_scripts'
-    ensure_path(community_scripts_path)
-    community_script_path = community_scripts_path + r'/' + script_UUID
+    community_script_path = ensure_path(community_scripts_path) + r'/' + script_UUID
     return ensure_path(community_script_path)
 
 
@@ -83,7 +82,6 @@ def ensure_project_path(user_UUID, project_UUID):
     project_path = user_path + r'/' + project_UUID
     input_path = project_path + r'/input'
     output_path = project_path + r'/output'
-    ensure_path(project_path)
     ensure_path(input_path)
     ensure_path(output_path)
     return project_path
@@ -109,13 +107,12 @@ def generate_input(options, user_UUID, project_UUID):
     ensure_file_does_not_exist(existing_generated_dat_file_path)
     ensure_file_does_not_exist(existing_generated_top_file_path)
     ensure_file_does_not_exist(input_file_path)
-    os.path.join(input_file_path)
 
     # generate-sa.py, generate-RNA.py, generate.py? depending on options?
     # with box sides i.e. 'python generate-sa.py 9 sequence.txt'
     original_working_directory = os.getcwd()
     current_file_directory = os.path.dirname(os.path.realpath(__file__))
-    project_input_directory = current_file_directory + r'/../data/user_projects/' + user_UUID + r'/' + project_UUID + 'r/input'
+    project_input_directory = current_file_directory + r'/../data/user_projects/' + user_UUID + r'/' + project_UUID + r'/input'
     os.chdir(project_input_directory)
     bash_command = 'python ../../../../../oxDNA/UTILS/generate-sa.py ' + options["Box Sides"][1] + ' sequence.txt'
     subprocess.call(bash_command, shell=True)
@@ -137,9 +134,9 @@ def generate_sequence(sequence_input, user_UUID, project_UUID):
     project_path = ensure_project_path(user_UUID, project_UUID)
     sequence_file_path = project_path + r'/input/sequence.txt'
     ensure_file_does_not_exist(sequence_file_path)
-    os.path.join(sequence_file_path)
-    sequence_file = open(sequence_file_path, 'w')
+
     # write to sequence.txt as if sequence_input = [["AAT", 9], ["TTG", 4], ["CGT", 3]]
+    sequence_file = open(sequence_file_path, 'w')
     for i in range(len(sequence_input)):
         for j in range(len(sequence_input[i][1])):
             sequence_file.write(sequence_input[i][0] + '\n')
@@ -150,7 +147,7 @@ def generate_sequence(sequence_input, user_UUID, project_UUID):
 def run_oxDNA(user_UUID, project_UUID):
     original_working_directory = os.getcwd()
     current_file_directory = os.path.dirname(os.path.realpath(__file__))
-    project_input_directory = current_file_directory + r'/../data/user_projects/' + user_UUID + r'/' + project_UUID + 'r/input'
+    project_input_directory = current_file_directory + r'/../data/user_projects/' + user_UUID + r'/' + project_UUID + r'/input'
     energy_output_path = project_input_directory + r'/../output/energy.dat'
     last_conf_output_path = project_input_directory + r'/../output/last_conf.dat'
     log_output_path = project_input_directory + r'/../output/log.dat'
