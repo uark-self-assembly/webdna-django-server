@@ -6,6 +6,7 @@ from .responses import *
 from .messages import *
 from .util.password_util import *
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import *
 
 # NOTE: It is best practice to keep all validation (field, class, etc.) in serializers.py
 # A view should ideally call serializer validation and return responses based on the validation result
@@ -53,3 +54,10 @@ def register(request):
         # return JsonResponse(serialized_body.data, status=status.HTTP_201_CREATED)
 
     return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# /api/execution
+@api_view(['GET'])
+def output_console(request):
+    template_values = {'ws_url': 'ws://{SERVER_NAME}:{SERVER_PORT}/ws/{0}?subscribe-session'.format(request.user.id, **request.META)}
+    return render(request, 'output.html', template_values)

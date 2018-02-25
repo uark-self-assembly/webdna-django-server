@@ -1,6 +1,6 @@
 import os
 import subprocess
-from WebDNA.responses import *
+import redis
 
 ################################
 # These utilities assumes WebDNA/data/community_scripts, WebDNA/data/user_projects and WebDNA/oxDNA.
@@ -51,6 +51,12 @@ from WebDNA.responses import *
 # |  |  /project_"UUID2"
 # |  /user_"UUID2"
 ################################
+
+
+def output_message(session_key, user, message):
+    conn = redis.StrictRedis()
+    ws_url = '{0}:{1}'.format(session_key, user)
+    conn.publish(ws_url, message)
 
 
 def ensure_path(path):
@@ -116,6 +122,26 @@ def list_files_lines(*file_paths):
     return files_lines
 
 
+def execute(command, user_UUID_str):
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    # stdout=subprocess.PIPE for stdoutdata to be something other than None
+    while True:
+        next_line = process.stdout.readline()
+        # if child process terminated .poll()=returncode else .poll()=None
+        if next_line == '' and process.poll() is not None:
+            break
+        ######################################################
+        # output_message('0', user_UUID_str, next_line) # should the token be on the session key?
+        ######################################################
+    output = process.communicate()[0]  # process.communicate()=(stdoutdata, stderr)
+    exit_code = process.returncode  # exit status of child process
+
+    if exit_code == 0:
+        return output
+    else:
+        raise Exception(command, exit_code, output)
+
+
 def generate_input(input_options, user_UUID_str, project_UUID_str):
     project_path = ensure_project_path(user_UUID_str, project_UUID_str)
     project_input_path = project_path + r'/input'
@@ -136,7 +162,7 @@ def generate_input(input_options, user_UUID_str, project_UUID_str):
     original_working_directory = os.getcwd()
     os.chdir(project_input_path)
     bash_command = 'python ../../../../../oxDNA/UTILS/generate-sa.py ' + input_options['Box Sides'][1] + ' sequence.txt'
-    subprocess.call(bash_command, shell=True)
+    execute(bash_command, user_UUID_str)
 
     input_file = open(input_file_path, 'w')
     try:
@@ -227,7 +253,8 @@ def run_oxDNA(user_UUID_str, project_UUID_str):
     ensure_file_does_not_exist(log_output_path)
     ensure_file_does_not_exist(trajectory_output_path)
 
-    subprocess.call('../../../../../oxDNA/build/bin/oxDNA input.txt', shell=True)
+    bash_command = '../../../../../oxDNA/build/bin/oxDNA input.txt'
+    execute(bash_command, user_UUID_str)
     # are these the only possible output files?
     os.rename(project_input_path + r'/energy.dat', energy_output_path)
     os.rename(project_input_path + r'/last_conf.dat', last_conf_output_path)

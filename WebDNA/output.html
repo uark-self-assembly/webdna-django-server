@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Shell Output</title>
+</head>
+<body>
+    <textarea id="output" row=3 cols=25></textarea>
+
+    <script>
+        var ws = new WebSocket('{{ ws_url }}');
+        ws.onmessage = function(e) {
+          $('#output').append(e.data);
+        };
+    </script>
+</body>
+</html>
