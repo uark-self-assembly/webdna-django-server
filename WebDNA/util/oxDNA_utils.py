@@ -9,24 +9,51 @@ import redis
 # Some options will not be available to change such as genertated.top, generated.dat, energy.dat, etc.
 # options will also have default options (i.e. 'topology' : ['topology', 'generated.top'])
 # options = {
-#               'Box Sides' : ['box sides', 'formatted input'],
-#               'sim_type' : ['sim_type', 'MD'],
-#               'backend' : ['backend', 'CPU'],
-#               'steps' : ['steps', '1e6'],
-#               'newtonian_steps' : ['newtonian_steps', '103'],
-#               .
-#               .
-#               .
+#     'Box Sides' : ['box sides', 'formatted input'],
+#     'sim_type' : ['sim_type', 'MD'],
+#     'backend' : ['backend', 'CPU'],
+#     'steps' : ['steps', '1e6'],
+#     'newtonian_steps' : ['newtonian_steps', '103'],
+#     .
+#     .
+#     .
 # }
-# sequence = [
-#               ['', 'AAGT', 4],
-#               ['DOUBLE', 'TTTT', 3],
-#               ['', 'CGAA', 2],
-#               .
-#               .
-#               .
+# options_not_available_to_user = [
+#    ?'backend'                  should probably make flexible
+#     'output_prefix',
+#     'reduced_conf_output_dir',
+#     'conf_file',               input same as generate-RNA.py or others?
+#     'topology',                input same as generate-RNA.py or others?
+#    ?'trajectory_file',
+#    d'lastconf_file',
 # ]
+# default_options = {
+#     'interaction_type' : ['interaction_type', 'DNA'],        Generic
+#     'sim_type' : ['sim_type', 'MD'],
+#     'debug' : ['debug', '0'],
+#     'restart_step_counter' : ['restart_step_counter', '0'],  Simulation
+#     'seed' : ['seed', 'time(NULL)'],
+#     'fix_diffusion' : ['fix_diffusion', '1'],
+#     'back_in_box' : ['back_in_box', '0'],
+#     'use_average_seq' : ['use_average_seq', '1'],
+#     'external_forces' : ['external_forces', '0'],
+#
+# }
 
+
+
+# mandatory_options
+
+
+# sequence = [
+#     ['', 'AAGT', 4],
+#     ['DOUBLE ', 'TTTT', 3],
+#     ['', 'CGAA', 2],
+#     .
+#     .
+#     .
+# ]
+#
 # SAMPLE FILE SYSTEM (this file assumes linux machine)
 # /community_scripts
 # |  /scriptName_"UUID1"
@@ -131,7 +158,7 @@ def execute(command, user_UUID_str):
         if next_line == '' and process.poll() is not None:
             break
         ######################################################
-        # output_message('0', user_UUID_str, next_line) # should the token be on the session key?
+        output_message('0', user_UUID_str, next_line) # should the token be on the session key?
         ######################################################
     output = process.communicate()[0]  # process.communicate()=(stdoutdata, stderr)
     exit_code = process.returncode  # exit status of child process
@@ -212,11 +239,7 @@ def generate_sequence(sequence_input, user_UUID_str, project_UUID_str):
         # write to sequence.txt as if sequence_input = [['DOUBLE', 'AAT', 9], ['', 'TTG', 4], ['', 'CGT', 3]]
         for i in range(len(sequence_input)):
             for j in range(len(sequence_input[i][2])):
-                if sequence_input[i][0] == 'DOUBLE':
-                    line = sequence_input[i][0] + ' ' + sequence_input[i][1] + '\n'
-                else:
-                    line = sequence_input[i][1] + '\n'
-                sequence_file.write(line)
+                sequence_file.write(sequence_input[i][0] + sequence_input[i][1] + '\n')
         sequence_file.close()
         return
     except TypeError:
@@ -228,7 +251,34 @@ def generate_sequence(sequence_input, user_UUID_str, project_UUID_str):
     # return 'First argument expects to be a file object that can be read or a list'
 
 
-def generate_complete_input(user_UUID_str, project_UUID_str, input_options, sequence_input, *otherfiles):
+def validate_option_dependencies(options, user_UUID_str, project_UUID_str):
+    # ensure default options are applied if none replace the default
+    # [seq_dep_file] path must exist if [use_average_seq=1] is 0
+    # [external_forces_file] path must exist if [external_forces=0] is 1
+    # Molecular dynamics simulation
+
+    # [confs_to_skip=0] set to anything but 0 only if conf_file is a trajectory file (generated.dat)
+
+    project_path = ensure_project_path(user_UUID_str, project_UUID_str)
+
+    #reduced_conf directory exists
+    if options['print_reduced_conf_every'][1] > 0:
+        reduced_conf_path = ensure_path(project_path + r'/output/reduced_conf')
+        options['reduced_conf_output_dir'] = [
+            'reduced_conf_output_dir',
+            reduced_conf_path
+        ]
+
+
+def validate_options_data(options):
+    pass
+    # values and simulation units
+    # does sequence.txt have to have all equal length strands?
+    # DNA => TGAC
+    # RNA => UGAC
+
+
+def generate_complete_input(user_UUID_str, project_UUID_str, input_options, sequence, external_forces, sequence_dependent_parameters):
     pass
 
 

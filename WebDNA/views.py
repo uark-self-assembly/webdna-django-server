@@ -7,6 +7,7 @@ from .messages import *
 from .util.password_util import *
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import *
+from WebDNA.util.oxDNA_utils import *
 
 # NOTE: It is best practice to keep all validation (field, class, etc.) in serializers.py
 # A view should ideally call serializer validation and return responses based on the validation result
@@ -55,6 +56,11 @@ def register(request):
 
     return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+# /api/execute
+@api_view(['GET'])
+def execute():
+    run_oxDNA('user', 'project')
 
 # /api/execution
 @api_view(['GET'])
