@@ -78,7 +78,7 @@ import redis
 # |  |  /project_"UUID2"
 # |  /user_"UUID2"
 ################################
-
+output_string = []
 
 def output_message(session_key, user, message):
     conn = redis.StrictRedis()
@@ -158,7 +158,8 @@ def execute(command, user_UUID_str):
         if next_line == '' and process.poll() is not None:
             break
         ######################################################
-        output_message('0', user_UUID_str, next_line) # should the token be on the session key?
+        # output_message('0', user_UUID_str, next_line) # should the token be on the session key?
+        output_string.append(next_line)
         ######################################################
     output = process.communicate()[0]  # process.communicate()=(stdoutdata, stderr)
     exit_code = process.returncode  # exit status of child process

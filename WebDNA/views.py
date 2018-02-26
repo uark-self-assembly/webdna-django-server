@@ -64,5 +64,6 @@ def execute(request):
 # /api/execution
 @api_view(['GET'])
 def output_console(request):
-    template_values = {'ws_url': 'ws://{SERVER_NAME}:{SERVER_PORT}/ws/{0}?subscribe-session'.format(request.user.id, **request.META)}
-    return render(request, 'output.html', template_values)
+    # template_values = {'ws_url': 'ws://{SERVER_NAME}:{SERVER_PORT}/ws/{0}?subscribe-session'.format(request.user.id, **request.META)}
+    # return render(request, 'output.html', template_values)
+    return Response(output_string)
