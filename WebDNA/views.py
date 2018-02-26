@@ -4,7 +4,6 @@ from rest_framework.decorators import api_view
 from .serializers import *
 from .responses import *
 from .messages import *
-from .util.password_util import *
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import *
 from WebDNA.util.oxDNA_utils import *
@@ -59,7 +58,7 @@ def register(request):
 
 # /api/execute
 @api_view(['GET'])
-def execute():
+def execute(request):
     run_oxDNA('user', 'project')
 
 # /api/execution

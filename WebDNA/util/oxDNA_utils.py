@@ -177,7 +177,7 @@ def generate_input(input_options, user_UUID_str, project_UUID_str):
     generated_top_file_path = project_input_path + r'/generated.top'
     input_file_path = project_input_path + r'/input.txt'
 
-    if not os.path.exists(sequence_file_path):
+    if not os.path.isfile(sequence_file_path):
         raise IOError
         # return 'Error. Must generate sequence.txt first'
     ensure_file_does_not_exist(generated_dat_file_path)
@@ -293,7 +293,7 @@ def run_oxDNA(user_UUID_str, project_UUID_str):
     # change working directory so that output files will land somewhere appropriate
     os.chdir(project_input_path)
 
-    if not os.path.exists(project_input_path + r'/input.txt'):  # or only input without .txt?
+    if not os.path.isfile(project_input_path + r'/input.txt'):  # or only input without .txt?
         os.chdir(original_working_directory)
         raise IOError
         # return 'Error. Input file missing'
