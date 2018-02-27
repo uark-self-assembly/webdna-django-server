@@ -60,10 +60,10 @@ def register(request):
 @api_view(['GET'])
 def execute(request):
     run_oxDNA('user', 'project')
+    return Response(status=status.HTTP_202_ACCEPTED)
 
-# /api/execution
+
+# /api/update
 @api_view(['GET'])
 def output_console(request):
-    # template_values = {'ws_url': 'ws://{SERVER_NAME}:{SERVER_PORT}/ws/{0}?subscribe-session'.format(request.user.id, **request.META)}
-    # return render(request, 'output.html', template_values)
-    return Response(output_string)
+    return Response(template_name='output.html')

@@ -151,23 +151,6 @@ def list_files_lines(*file_paths):
 
 def execute(command, user_UUID_str):
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    # stdout=subprocess.PIPE for stdoutdata to be something other than None
-    while True:
-        next_line = process.stdout.readline()
-        # if child process terminated .poll()=returncode else .poll()=None
-        if next_line == '' and process.poll() is not None:
-            break
-        ######################################################
-        # output_message('0', user_UUID_str, next_line) # should the token be on the session key?
-        output_string.append(next_line)
-        ######################################################
-    output = process.communicate()[0]  # process.communicate()=(stdoutdata, stderr)
-    exit_code = process.returncode  # exit status of child process
-
-    if exit_code == 0:
-        return output
-    else:
-        raise Exception(command, exit_code, output)
 
 
 def generate_input(input_options, user_UUID_str, project_UUID_str):
@@ -307,10 +290,10 @@ def run_oxDNA(user_UUID_str, project_UUID_str):
     bash_command = '../../../../../oxDNA/build/bin/oxDNA input.txt'
     execute(bash_command, user_UUID_str)
     # are these the only possible output files?
-    os.rename(project_input_path + r'/energy.dat', energy_output_path)
-    os.rename(project_input_path + r'/last_conf.dat', last_conf_output_path)
-    os.rename(project_input_path + r'/log.dat', log_output_path)
-    os.rename(project_input_path + r'/trajectory.dat', trajectory_output_path)
+    #os.rename(project_input_path + r'/energy.dat', energy_output_path)
+    #os.rename(project_input_path + r'/last_conf.dat', last_conf_output_path)
+    #os.rename(project_input_path + r'/log.dat', log_output_path)
+    #os.rename(project_input_path + r'/trajectory.dat', trajectory_output_path)
     # back to original working directory
     os.chdir(original_working_directory)
     return list_files_lines(energy_output_path, trajectory_output_path, last_conf_output_path, log_output_path)
