@@ -63,6 +63,14 @@ def execute(request):
     return Response(status=status.HTTP_202_ACCEPTED)
 
 
+@api_view(['POST'])
+def checkStatus(request):
+    serialized_body = CheckStatusSerializer(data=request.data)
+    if serialized_body.is_valid():
+        pass
+        # check_oxDNA()
+
+
 # /api/update
 @api_view(['GET'])
 def output_console(request):

@@ -18,6 +18,12 @@ class ProjectSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class JobSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Job
+        fields = '__all__'
+
+
 class LoginSerializer(serializers.Serializer):
     class Meta:
         model = User
@@ -89,3 +95,17 @@ class RegistrationSerializer(serializers.Serializer):
 
     def update(self, instance, validated_data):
         pass
+
+
+class CheckStatusSerializer(serializers.Serializer):
+    class Meta:
+        model = Job
+        fields = ('project_id')
+
+    project_id = serializers.UUIDField()
+
+    def validate_project_id(self, project_id):
+        query_set = Job.objects.get_queryset(project_id=project_id, finish_time__isnull=False)
+        if not query_set.get():
+            raise serializers.ValidationError(INVALID_BODY)
+        return project_id
