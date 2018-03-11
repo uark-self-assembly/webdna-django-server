@@ -38,7 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'WebDNA.apps.WebdnaConfig',
-    'rest_framework'
+    'rest_framework',
+    'celery'
+    'django_celery_results'
 ]
 
 MIDDLEWARE = [
@@ -134,4 +136,8 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
     'django.contrib.auth.hashers.Argon2PasswordHasher',
 ]
+
+# Celery Config
+CELERY_BROKER_URL = 'amqp://django_server:dja1157Ser$Pass@localhost/webdna-production'
+
 

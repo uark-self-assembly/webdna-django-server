@@ -6,7 +6,6 @@ from celery import Celery
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'WebDNA.settings')
 
 app = Celery('WebDNA',
-             broker='amqp://django_server:dja1157Ser$Pass@localhost/webdna-production',
              backend='amqp',
              include=['WebDNA.tasks'])
 
