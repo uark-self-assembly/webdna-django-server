@@ -21,8 +21,8 @@ class Project(models.Model):
     class Meta:
         db_table = '"webdna"."project"'
 
-    id = models.UUIDField(primary_key=True, unique=True)
-    user_id = models.UUIDField(unique=True)
+    id = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4)
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
     data_file = models.CharField(max_length=128)
     created_on = models.DateTimeField()
@@ -33,8 +33,8 @@ class Job(models.Model):
     class Meta:
         db_table = '"webdna"."job"'
 
-    id = models.UUIDField(primary_key=True, unique=True)
-    project_id = models.UUIDField()
+    id = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4)
+    project_id = models.ForeignKey(Project, on_delete=models.CASCADE)
     start_time = models.DateTimeField(editable=False)
     finish_time = models.DateTimeField(editable=False)
     process_name = models.CharField(max_length=128)
