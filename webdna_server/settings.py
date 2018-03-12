@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'WebDNA.apps.WebdnaConfig',
     'rest_framework',
-    'celery'
+    'celery',
     'django_celery_results'
 ]
 
