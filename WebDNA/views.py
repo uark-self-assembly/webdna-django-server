@@ -27,8 +27,11 @@ class ProjectView(APIView):
         serializer = ProjectSerializer(projects, many=True)
         return Response(serializer.data)
 
-    def post(self, request):
+    def put(self, request):
+        request.data["data_file"] = request.data["name"] + "_file"
+        request.data["job_running"] = False
         serialized_body = ProjectSerializer(data=request.data)
+
         if serialized_body.is_valid():
             project_serializer = ProjectSerializer(instance=serialized_body.save())
             return ObjectResponse.make(project_serializer.data)
