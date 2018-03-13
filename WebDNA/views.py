@@ -3,6 +3,10 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from .serializers import *
 from .responses import *
+from .messages import *
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import *
+from WebDNA.util.oxDNA_utils import *
 
 # NOTE: It is best practice to keep all validation (field, class, etc.) in serializers.py
 # A view should ideally call serializer validation and return responses based on the validation result
@@ -49,3 +53,24 @@ def register(request):
         return RegistrationResponse.make(user_serializer.data)
 
     return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# /api/execute
+@api_view(['GET'])
+def execute(request):
+    run_oxDNA('user', 'project')
+    return Response(status=status.HTTP_202_ACCEPTED)
+
+
+@api_view(['POST'])
+def checkStatus(request):
+    serialized_body = CheckStatusSerializer(data=request.data)
+    if serialized_body.is_valid():
+        pass
+        # check_oxDNA()
+
+
+# /api/update
+@api_view(['GET'])
+def output_console(request):
+    return Response(template_name='output.html')
