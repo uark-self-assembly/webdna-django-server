@@ -26,9 +26,10 @@ SECRET_KEY = '*=(0y#-6s%=n-3z3q=sg2n7e#hqeh2&286q)t2=gh5y!zxcu3r'
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "10.9.1.113",
-    "192.168.0.10",
-    "localhost"
+    '10.9.1.113',
+    '192.168.0.10',
+    '127.0.0.1',
+    'localhost'
 ]
 
 
@@ -147,5 +148,7 @@ PASSWORD_HASHERS = [
 
 # Celery Config
 CELERY_BROKER_URL = 'amqp://django_server:dja1157Ser$Pass@localhost/webdna-production'
+CELERY_BACKEND = 'rpc://'
+CELERY_INCLUDE = 'WebDNA.tasks'
 
 
