@@ -21,7 +21,8 @@ from WebDNA import views
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^api/users/', views.UserView.as_view()),
-    url(r'^api/projects/', views.ProjectView.as_view()),
+    url(r'^api/projects/$', views.ProjectList.as_view()),
+    url(r'^api/projects/?(?P<id>[^/]+)/$', views.ProjectView.as_view()),
     url(r'^api/login/', views.login),
     url(r'^api/register', views.register),
     url(r'^api/update', views.output_console),

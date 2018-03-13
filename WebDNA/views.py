@@ -2,6 +2,10 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from .serializers import *
 from .responses import *
+from pprint import pprint
+
+from rest_framework import mixins
+from rest_framework import generics
 
 # NOTE: It is best practice to keep all validation (field, class, etc.) in serializers.py
 # A view should ideally call serializer validation and return responses based on the validation result
@@ -19,24 +23,18 @@ class UserView(APIView):
         return Response(serializer.data)
 
 
+class ProjectList(
+        generics.CreateAPIView,
+        generics.ListAPIView):
+    queryset = Project.objects.all()
+    serializer_class = ProjectSerializer
+
+
 # /api/projects
-class ProjectView(APIView):
-
-    def get(self, request):
-        projects = Project.objects.all()
-        serializer = ProjectSerializer(projects, many=True)
-        return Response(serializer.data)
-
-    def put(self, request):
-        request.data["data_file"] = request.data["name"] + "_file"
-        request.data["job_running"] = False
-        serialized_body = ProjectSerializer(data=request.data)
-
-        if serialized_body.is_valid():
-            project_serializer = ProjectSerializer(instance=serialized_body.save())
-            return ObjectResponse.make(project_serializer.data)
-
-        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+class ProjectView(generics.RetrieveUpdateDestroyAPIView):
+    lookup_field = 'id'
+    queryset = Project.objects.all()
+    serializer_class = ProjectSerializer
 
 
 # /api/login
