@@ -1,3 +1,6 @@
+# Custom ignores
+oxDNA/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -161,3 +164,5 @@ fabric.properties
 \.idea/webdna_server\.iml
 \.idea/misc\.xml
 
+
+WebDNA/migrations/0001_initial\.py

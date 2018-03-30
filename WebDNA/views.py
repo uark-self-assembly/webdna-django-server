@@ -1,8 +1,11 @@
 from rest_framework.views import APIView
-from rest_framework import status
 from rest_framework.decorators import api_view
 from .serializers import *
 from .responses import *
+from pprint import pprint
+
+from rest_framework import mixins
+from rest_framework import generics
 
 # NOTE: It is best practice to keep all validation (field, class, etc.) in serializers.py
 # A view should ideally call serializer validation and return responses based on the validation result
@@ -12,7 +15,7 @@ from .responses import *
 
 
 # /api/users
-class UserList(APIView):
+class UserView(APIView):
 
     def get(self, request):
         users = User.objects.all()
@@ -20,13 +23,18 @@ class UserList(APIView):
         return Response(serializer.data)
 
 
-# /api/projects
-class ProjectList(APIView):
+class ProjectList(
+        generics.CreateAPIView,
+        generics.ListAPIView):
+    queryset = Project.objects.all()
+    serializer_class = ProjectSerializer
 
-    def get(self, request):
-        projects = Project.objects.all()
-        serializer = ProjectSerializer(projects, many=True)
-        return Response(serializer.data)
+
+# /api/projects
+class ProjectView(generics.RetrieveUpdateDestroyAPIView):
+    lookup_field = 'id'
+    queryset = Project.objects.all()
+    serializer_class = ProjectSerializer
 
 
 # /api/login
@@ -49,3 +57,23 @@ def register(request):
         return RegistrationResponse.make(user_serializer.data)
 
     return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# /api/execute
+@api_view(['GET'])
+def execute(request):
+    return Response(status=status.HTTP_202_ACCEPTED)
+
+
+@api_view(['POST'])
+def checkStatus(request):
+    serialized_body = CheckStatusSerializer(data=request.data)
+    if serialized_body.is_valid():
+        pass
+        # check_oxDNA()
+
+
+# /api/update
+@api_view(['GET'])
+def output_console(request):
+    return Response(template_name='output.html')

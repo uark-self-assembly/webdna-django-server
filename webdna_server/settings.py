@@ -25,7 +25,12 @@ SECRET_KEY = '*=(0y#-6s%=n-3z3q=sg2n7e#hqeh2&286q)t2=gh5y!zxcu3r'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    '10.9.1.113',
+    '192.168.0.10',
+    '127.0.0.1',
+    'localhost'
+]
 
 
 # Application definition
@@ -38,7 +43,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'WebDNA.apps.WebdnaConfig',
-    'rest_framework'
+    'rest_framework',
+    'celery',
+    'django_celery_results'
 ]
 
 MIDDLEWARE = [
@@ -49,6 +56,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
 
 ROOT_URLCONF = 'webdna_server.urls'
@@ -120,6 +129,8 @@ USE_L10N = True
 
 USE_TZ = True
 
+CORS_ORIGIN_ALLOW_ALL = True
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
@@ -134,4 +145,10 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
     'django.contrib.auth.hashers.Argon2PasswordHasher',
 ]
+
+# Celery Config
+CELERY_BROKER_URL = 'amqp://django_server:dja1157Ser$Pass@localhost/webdna-production'
+CELERY_BACKEND = 'rpc://'
+CELERY_INCLUDE = 'WebDNA.tasks'
+
 
