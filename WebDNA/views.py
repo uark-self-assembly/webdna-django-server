@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from .serializers import *
 from .responses import *
+from .tasks import *
 from pprint import pprint
 
 from rest_framework import mixins
@@ -77,3 +78,10 @@ def checkStatus(request):
 @api_view(['GET'])
 def output_console(request):
     return Response(template_name='output.html')
+
+
+@api_view(['GET'])
+def celery_test(request):
+    test.delay()
+    return TestResponse.make()
+

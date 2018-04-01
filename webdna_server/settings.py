@@ -147,7 +147,7 @@ PASSWORD_HASHERS = [
 ]
 
 # Celery Config
-CELERY_BROKER_URL = 'amqp://django_server:dja1157Ser$Pass@localhost/webdna-production'
+CELERY_BROKER_URL = 'amqp://django_server:productionpass@localhost/webdna-production'
 CELERY_BACKEND = 'rpc://'
 CELERY_INCLUDE = 'WebDNA.tasks'
 
