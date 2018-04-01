@@ -163,6 +163,3 @@ crashlytics-build.properties
 fabric.properties
 \.idea/webdna_server\.iml
 \.idea/misc\.xml
-
-
-WebDNA/migrations/0001_initial\.py
