@@ -10,8 +10,10 @@ import os
 @app.task()
 def execute_sim(proj_id, path):
     print("Received new execution for project: " + proj_id)
-    p = subprocess.Popen(["oxDNA", os.getcwd() + "/" + path + "/input.txt"], cwd=os.getcwd() + "/" + path)
+    log = open(file=path + "/" + "stdout.log", mode='a')
 
+    p = subprocess.Popen(["oxDNA", os.getcwd() + "/" + path + "/input.txt"], cwd=os.getcwd() + "/" + path, stdout=log)
+    p.wait()
 
 @app.task
 def test():
