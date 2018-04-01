@@ -47,3 +47,9 @@ class RegistrationResponse:
             http_status=status.HTTP_201_CREATED,
             message='registered'
         )
+
+
+class TestResponse:
+    @staticmethod
+    def make():
+        return Response(data="Sending task to worker...", status=status.HTTP_200_OK)

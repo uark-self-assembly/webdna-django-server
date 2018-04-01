@@ -26,7 +26,8 @@ urlpatterns = [
     url(r'^api/login/', views.login),
     url(r'^api/register', views.register),
     url(r'^api/update', views.output_console),
-    url(r'^api/execute', views.execute)
+    url(r'^api/execute', views.execute),
+    url(r'^api/test', views.celery_test)
 ]
 
 url_patterns = format_suffix_patterns(urlpatterns)
