@@ -1,5 +1,6 @@
 # Custom ignores
 oxDNA/
+server-data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
