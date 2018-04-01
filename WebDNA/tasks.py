@@ -14,7 +14,8 @@ def execute_sim(proj_id, path):
 
     p = subprocess.Popen(["oxDNA", os.getcwd() + "/" + path + "/input.txt"], cwd=os.getcwd() + "/" + path, stdout=log)
     p.wait()
-
+    log.close()
+    
 @app.task
 def test():
     print("Test task received from WebDNA server!")
