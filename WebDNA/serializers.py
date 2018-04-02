@@ -7,6 +7,36 @@ import re
 import random
 
 
+class ExecutionSerializer(serializers.Serializer):
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
+
+    class Meta:
+        model = Project
+        fields = 'id'
+
+    id = serializers.CharField(max_length=36)
+    fetched_project = None
+
+    def validate(self, execution_data):
+        proj_id = execution_data['id']
+
+        query_set = Project.objects.all()
+        fetched = query_set.filter(id=proj_id)
+        if not fetched:
+            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+
+        self.fetched_project = fetched[0]
+
+        if self.fetched_project.job_running:
+            raise serializers.ValidationError(JOB_ALREADY_EXECUTING)
+
+        return execution_data
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
