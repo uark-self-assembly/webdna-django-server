@@ -4,11 +4,13 @@ from rest_framework.decorators import api_view
 from .serializers import *
 from .responses import *
 from .tasks import *
+from .messages import *
 import os
 from pprint import pprint
 from rest_framework import mixins
 from rest_framework import generics
 from rest_framework.parsers import MultiPartParser
+from WebDNA.util.oxDNA_util import *
 
 # NOTE: It is best practice to keep all validation (field, class, etc.) in serializers.py
 # A view should ideally call serializer validation and return responses based on the validation result
@@ -111,11 +113,17 @@ def check_status(request):
 
         if os.path.isfile(path + '/stdout.log'):
             with open(path + '/stdout.log', 'r') as log:
-                log_string = log.read()
+                stdout_string = log.read()
+        else:
+            stdout_string = ''
+
+        if os.path.isfile(path + '/log.dat'):
+            with open(path + '/log.dat', 'r') as logdatfile:
+                log_string = logdatfile.read()
         else:
             log_string = ''
 
-        response_data = {'running': running, 'log': log_string}
+        response_data = {'running': running, 'log': log_string, 'stdout': stdout_string}
         return JsonResponse(data=response_data, status=status.HTTP_200_OK)
     else:
         return Response(serialized_body.errors, status.HTTP_400_BAD_REQUEST)
@@ -137,8 +145,8 @@ def get_visual(request):
         project_path = views_path + r'/../server-data/server-projects/' + project_id
 
         if os.path.isfile(project_path + r'/trajectory.dat'):
-            file = get_PDB_file.delay(project_id)
-            response_data = {'file': file, 'project_id': project_id}
+            file_string = get_PDB_file.delay(project_id)
+            response_data = {'file_string': file_string, 'project_id': project_id}
             return JsonResponse(data=response_data, status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -154,7 +162,9 @@ def set_project_settings(request):
         project_id = serialized_body.validated_data['project_id']
 
         # TODO Implement a line that does something like the following
-        # util.generate_input_file(project_id, serialized_body.validated_data)
+        input_file_status = generate_input_file(project_id, serialized_body.validated_data)
+        if input_file_status == MISSING_PROJECT_FILES:
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response(status=status.HTTP_201_CREATED)
     else:
@@ -168,7 +178,14 @@ def get_project_settings(request):
         project_id = serialized_body.validated_data['project_id']
 
         # TODO Implement a line that does something like the following:
-        # data = util.get_input_file_as_serializer_data(project_id)
-        return Response(status=status.HTTP_201_CREATED)
+        input_data = get_input_file_as_serializer_data(project_id)
+        if input_data == MISSING_PROJECT_FILES:
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JsonResponse(data=input_data, status=status.HTTP_200_OK)
     else:
         return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def get_energy(request):
+    pass
