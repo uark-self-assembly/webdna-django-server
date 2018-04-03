@@ -224,16 +224,16 @@ class ProjectSettingsSerializer(serializers.Serializer):
     external_forces_file = serializers.CharField(max_length=128)
 
     # Molecular Dynamics Simulations Options
-    dt = serializers.FloatField()
+    dt = serializers.FloatField(required=True)
     thermostat = serializers.CharField(max_length=10)
     newtonian_steps = serializers.IntegerField()  # required if thermostat != "no"
     pt = serializers.FloatField()  # only used if thermostat == "john"
-    diff_coeff = serializers.FloatField()  # required if pt is not specified
+    diff_coeff = serializers.FloatField(required=True)  # required if pt is not specified
 
     # NOT USING MONTE CARLO SIMULATION SETTINGS
 
     # Input/Output
-    conf_file = serializers.CharField(max_length=128)
+    conf_file = serializers.CharField(max_length=128, required=False)
     topology = serializers.CharField(max_length=128)
     trajectory_file = serializers.CharField(default='trajectory.dat', max_length=128)
     confs_to_skip = serializers.IntegerField(default=0) # only used if conf_file is a trajectory
