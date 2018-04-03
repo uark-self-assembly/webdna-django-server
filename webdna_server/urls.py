@@ -27,7 +27,8 @@ urlpatterns = [
     url(r'^api/register', views.register),
     url(r'^api/update', views.output_console),
     url(r'^api/execute', views.execute),
-    url(r'^api/test', views.celery_test)
+    url(r'^api/test', views.celery_test),
+    url(r'^api/file/upload', views.FileUploadView.as_view())
 ]
 
 url_patterns = format_suffix_patterns(urlpatterns)

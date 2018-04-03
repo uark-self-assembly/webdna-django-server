@@ -8,6 +8,7 @@ from pprint import pprint
 
 from rest_framework import mixins
 from rest_framework import generics
+from rest_framework.parsers import MultiPartParser
 
 # NOTE: It is best practice to keep all validation (field, class, etc.) in serializers.py
 # A view should ideally call serializer validation and return responses based on the validation result
@@ -23,6 +24,23 @@ class UserView(APIView):
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
+
+
+class FileUploadView(APIView):
+    parser_classes = (MultiPartParser,)
+
+    def put(self, request, filename, format=None):
+        file_obj = request.data['file']
+        project_id = request.data['id']
+        file_name = request.data['type']  # 'sequence.txt', 'seq_dep.txt', or 'external_forces.txt'
+        views_file_path = os.path.dirname(os.path.realpath(__file__))
+        new_file_path = views_file_path + r'/../server-data/server-projects/' + project_id + r'/' + file_name
+
+        new_file = open(file=new_file_path, mode='w')
+        for line in file_obj.readlines():
+            new_file.write(line)
+        new_file.close()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ProjectList(generics.CreateAPIView, generics.ListAPIView):
