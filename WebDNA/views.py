@@ -178,7 +178,14 @@ def get_project_settings(request):
         project_id = serialized_body.validated_data['project_id']
 
         # TODO Implement a line that does something like the following:
-        # data = util.get_input_file_as_serializer_data(project_id)
-        return Response(status=status.HTTP_201_CREATED)
+        input_data = get_input_file_as_serializer_data(project_id)
+        if input_data == MISSING_PROJECT_FILES:
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JsonResponse(data=input_data, status=status.HTTP_200_OK)
     else:
         return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def get_energy(request):
+    pass
