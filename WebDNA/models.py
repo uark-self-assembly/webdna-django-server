@@ -25,7 +25,6 @@ class Project(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
     created_on = models.DateTimeField(default=timezone.now)
-    job_running = models.BooleanField(default=False)
 
 
 class Job(models.Model):
@@ -34,6 +33,6 @@ class Job(models.Model):
 
     id = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    start_time = models.DateTimeField(editable=False)
-    finish_time = models.DateTimeField(editable=False)
-    process_name = models.CharField(max_length=128)
+    start_time = models.DateTimeField(editable=False, default=timezone.now)
+    finish_time = models.DateTimeField(editable=False, default=None, null=True)
+    process_name = models.CharField(max_length=128, default=None, null=True)

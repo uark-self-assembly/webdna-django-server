@@ -1,3 +1,4 @@
+from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from .serializers import *
@@ -5,7 +6,6 @@ from .responses import *
 from .tasks import *
 import os
 from pprint import pprint
-
 from rest_framework import mixins
 from rest_framework import generics
 
@@ -64,11 +64,14 @@ def register(request):
 def execute(request):
     serialized_body = ExecutionSerializer(data=request.data)
     if serialized_body.is_valid():
-        proj_path = "server-data/server-projects/" + serialized_body.validated_data['id']
+        job = serialized_body.fetched_job
+        if job is None:
+            job = serialized_body.create(serialized_body.validated_data)
+
+        proj_path = "server-data/server-projects/" + serialized_body.validated_data['project_id']
+
         if os.path.isdir(proj_path) and os.path.isfile(proj_path+"/input.txt"):
-            serialized_body.fetched_project.job_running = True
-            serialized_body.fetched_project.save(update_fields=['job_running'])
-            execute_sim.delay(serialized_body.validated_data['id'], proj_path)
+            execute_sim.delay(job.id, job.project_id, proj_path)
             return Response(status=status.HTTP_202_ACCEPTED)
         else:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -76,18 +79,27 @@ def execute(request):
         return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# /api/checkstatus
 @api_view(['POST'])
-def checkStatus(request):
+def check_status(request):
     serialized_body = CheckStatusSerializer(data=request.data)
     if serialized_body.is_valid():
-        pass
-        # check_oxDNA()
+        path = "server-data/server-projects/" + str(serialized_body.validated_data['project_id'])
+        running = True
 
+        if serialized_body.fetched_job.finish_time is not None:
+            running = False
 
-# /api/update
-@api_view(['GET'])
-def output_console(request):
-    return Response(template_name='output.html')
+        if os.path.isfile(path + '/stdout.log'):
+            with open(path + '/stdout.log', 'r') as log:
+                log_string = log.read()
+        else:
+            log_string = ''
+
+        response_data = {'running': running, 'log': log_string}
+        return JsonResponse(data=response_data, status=status.HTTP_200_OK)
+    else:
+        return Response(serialized_body.errors, status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
