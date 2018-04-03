@@ -113,11 +113,17 @@ def check_status(request):
 
         if os.path.isfile(path + '/stdout.log'):
             with open(path + '/stdout.log', 'r') as log:
-                log_string = log.read()
+                stdout_string = log.read()
+        else:
+            stdout_string = ''
+
+        if os.path.isfile(path + '/log.dat'):
+            with open(path + '/log.dat', 'r') as logdatfile:
+                log_string = logdatfile.read()
         else:
             log_string = ''
 
-        response_data = {'running': running, 'log': log_string}
+        response_data = {'running': running, 'log': log_string, 'stdout': stdout_string}
         return JsonResponse(data=response_data, status=status.HTTP_200_OK)
     else:
         return Response(serialized_body.errors, status.HTTP_400_BAD_REQUEST)
