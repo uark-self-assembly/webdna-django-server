@@ -30,14 +30,14 @@ class UserView(APIView):
 class FileUploadView(APIView):
     parser_classes = (MultiPartParser,)
 
-    def put(self, request, filename, format=None):
+    def put(self, request):
         file_obj = request.data['file']
         project_id = request.data['id']
         file_name = request.data['type']  # 'sequence.txt', 'seq_dep.txt', or 'external_forces.txt'
         views_file_path = os.path.dirname(os.path.realpath(__file__))
-        new_file_path = views_file_path + r'/../server-data/server-projects/' + project_id + r'/' + file_name
+        new_file_path = views_file_path + '/../server-data/server-projects/' + project_id + '/' + file_name
 
-        new_file = open(file=new_file_path, mode='w')
+        new_file = open(file=new_file_path, mode='wb')
         for line in file_obj.readlines():
             new_file.write(line)
         new_file.close()
