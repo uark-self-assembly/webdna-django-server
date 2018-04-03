@@ -8,33 +8,37 @@ import random
 
 
 class ExecutionSerializer(serializers.Serializer):
+    class Meta:
+        model = Job
+        fields = 'project_id'
+
+    project_id = serializers.CharField(max_length=36)
+    fetched_job = None
+
     def create(self, validated_data):
-        pass
+        job = Job.objects.create(project_id=validated_data['project_id'])
+        job.save()
+        return job
 
     def update(self, instance, validated_data):
         pass
 
-    class Meta:
-        model = Project
-        fields = 'id'
-
-    id = serializers.CharField(max_length=36)
-    fetched_project = None
-
     def validate(self, execution_data):
-        proj_id = execution_data['id']
+        project_id = execution_data['project_id']
 
         query_set = Project.objects.all()
-        fetched = query_set.filter(id=proj_id)
+        fetched = query_set.filter(id=project_id)
         if not fetched:
             raise serializers.ValidationError(PROJECT_NOT_FOUND)
 
-        self.fetched_project = fetched[0]
-
-        if self.fetched_project.job_running:
-            raise serializers.ValidationError(JOB_ALREADY_EXECUTING)
-
-        return execution_data
+        query_set = Job.objects.all()
+        fetched = query_set.filter(project_id=project_id)
+        if not fetched:
+            return execution_data
+        else:
+            self.fetched_job = fetched[0]
+            if self.fetched_job.finish_time is None:
+                raise serializers.ValidationError(JOB_ALREADY_EXECUTING)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -140,15 +144,28 @@ class RegistrationSerializer(serializers.Serializer):
 class CheckStatusSerializer(serializers.Serializer):
     class Meta:
         model = Job
-        fields = ('project_id')
+        fields = 'project_id'
 
     project_id = serializers.UUIDField()
+    fetched_job = None
 
-    def validate_project_id(self, project_id):
-        query_set = Job.objects.get_queryset(project_id=project_id, finish_time__isnull=False)
-        if not query_set.get():
-            raise serializers.ValidationError(INVALID_BODY)
-        return project_id
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
+
+    def validate(self, data):
+        project_id = data['project_id']
+        query_set = Job.objects.all()
+        fetched = query_set.filter(project_id=project_id)
+
+        if not fetched:
+            raise(serializers.ValidationError(JOB_NOT_FOUND))
+
+        self.fetched_job = fetched[0]
+
+        return data
 
 
 def randint():
@@ -156,6 +173,22 @@ def randint():
 
 
 class ProjectSettingsSerializer(serializers.Serializer):
+
+    def validate(self, project_settings_data):
+        project_id = project_settings_data['project_id']
+
+        query_set = Project.objects.all()
+        fetched = query_set.filter(id=project_id)
+        if not fetched:
+            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+
+        return project_settings_data
+
+    project_id = serializers.UUIDField()
+
+    # Generation options
+    box_size = serializers.IntegerField(min_value=1, default=20)
+
     # Generic Options
     interaction_type = serializers.CharField(max_length=10, default='DNA')
     sim_type = serializers.CharField(max_length=10, default='MD')
@@ -201,4 +234,11 @@ class ProjectSettingsSerializer(serializers.Serializer):
     time_scale = serializers.CharField(default='linear', max_length=128)
     print_conf_ppc = serializers.IntegerField()
     print_conf_interval = serializers.IntegerField()
-    print_reduced_conf_every = serializers.IntegerField(default=0)
+    print_reduced_conf_every = serializers.IntegerField(default=0, min_value=0)
+    reduced_conf_output_dir = serializers.CharField(max_length=128)
+    log_file = serializers.CharField(max_length=128)
+    print_timings = serializers.IntegerField(default=0, min_value=0, max_value=1)
+    timings_filename = serializers.CharField(max_length=128)
+    output_prefix = serializers.CharField(max_length=128)
+    print_input = serializers.IntegerField(default=0, min_value=0, max_value=1)
+    equilibration_steps = serializers.IntegerField(default=0, min_value=0)
