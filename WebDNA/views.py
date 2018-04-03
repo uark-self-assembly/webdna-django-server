@@ -9,6 +9,7 @@ from pprint import pprint
 from rest_framework import mixins
 from rest_framework import generics
 from rest_framework.parsers import MultiPartParser
+from WebDNA.util.oxDNA_util import *
 
 # NOTE: It is best practice to keep all validation (field, class, etc.) in serializers.py
 # A view should ideally call serializer validation and return responses based on the validation result
@@ -154,7 +155,8 @@ def set_project_settings(request):
         project_id = serialized_body.validated_data['project_id']
 
         # TODO Implement a line that does something like the following
-        # util.generate_input_file(project_id, serialized_body.validated_data)
+        generate_input_file(project_id, serialized_body.validated_data)
+
 
         return Response(status=status.HTTP_201_CREATED)
     else:

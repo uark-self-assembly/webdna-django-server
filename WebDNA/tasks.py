@@ -41,7 +41,7 @@ def get_PDB_file(project_id):
     trajectory_string = ''
     trajectory_file = open(file=project_path + r'/' + pdb_file_count[project_id] + r'trajectory.pdb', mode='r')
     for line in trajectory_file.readlines():
-        trajectory_string = trajectory_string + line
+        trajectory_string = trajectory_string + line # includes newline character
     return trajectory_string
 
 
