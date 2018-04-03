@@ -25,9 +25,9 @@ urlpatterns = [
     url(r'^api/projects/?(?P<id>[^/]+)/$', views.ProjectView.as_view()),
     url(r'^api/login/', views.login),
     url(r'^api/register', views.register),
-    url(r'^api/update', views.output_console),
     url(r'^api/execute', views.execute),
-    url(r'^api/test', views.celery_test)
+    url(r'^api/test', views.celery_test),
+    url(r'^api/checkstatus', views.check_status)
 ]
 
 url_patterns = format_suffix_patterns(urlpatterns)
