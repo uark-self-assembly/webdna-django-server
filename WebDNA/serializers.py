@@ -173,6 +173,22 @@ def randint():
 
 
 class ProjectSettingsSerializer(serializers.Serializer):
+
+    def validate(self, project_settings_data):
+        project_id = project_settings_data['project_id']
+
+        query_set = Project.objects.all()
+        fetched = query_set.filter(id=project_id)
+        if not fetched:
+            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+
+        return project_settings_data
+
+    project_id = serializers.UUIDField()
+
+    # Generation options
+    box_size = serializers.IntegerField(min_value=1, default=20)
+
     # Generic Options
     interaction_type = serializers.CharField(max_length=10, default='DNA')
     sim_type = serializers.CharField(max_length=10, default='MD')
@@ -218,4 +234,11 @@ class ProjectSettingsSerializer(serializers.Serializer):
     time_scale = serializers.CharField(default='linear', max_length=128)
     print_conf_ppc = serializers.IntegerField()
     print_conf_interval = serializers.IntegerField()
-    print_reduced_conf_every = serializers.IntegerField(default=0)
+    print_reduced_conf_every = serializers.IntegerField(default=0, min_value=0)
+    reduced_conf_output_dir = serializers.CharField(max_length=128)
+    log_file = serializers.CharField(max_length=128)
+    print_timings = serializers.IntegerField(default=0, min_value=0, max_value=1)
+    timings_filename = serializers.CharField(max_length=128)
+    output_prefix = serializers.CharField(max_length=128)
+    print_input = serializers.IntegerField(default=0, min_value=0, max_value=1)
+    equilibration_steps = serializers.IntegerField(default=0, min_value=0)
