@@ -4,7 +4,7 @@ from WebDNA.messages import *
 def generate_input_file(project_id, data):
     # will assume sequence.txt exists
     util_path = os.path.dirname(os.path.realpath(__file__))
-    project_path = util_path + '/../../server-data/server-projects/' + project_id
+    project_path = util_path + '/../../server-data/server-projects/' + str(project_id)
 
     if not os.path.exists(project_path):
         os.makedirs(project_path)
@@ -16,7 +16,12 @@ def generate_input_file(project_id, data):
 
     input_file = open(project_path + '/input.txt', 'w')
     for key, value in data.items():
-        input_file.write(key + ' = ' + value + '\n')
+        if key == 'project_id' or key == 'box_size':
+            continue
+
+        if key == 'T':
+            value = value + ' K'
+        input_file.write(key + ' = ' + str(value) + '\n')
     input_file.close()
     return INPUT_GENERATED
 
