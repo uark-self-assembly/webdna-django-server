@@ -41,6 +41,19 @@ class ExecutionSerializer(serializers.Serializer):
                 raise serializers.ValidationError(JOB_ALREADY_EXECUTING)
 
 
+class VisualizationSerializer(ExecutionSerializer):
+    def validate(self, execution_data):
+        project_id = execution_data['project_id']
+
+        query_set = Job.objects.all()
+        fetched = query_set.filter(project_id=project_id)
+        if not fetched:
+            raise serializers.ValidationError(JOB_NOT_FOUND)
+        else:
+            self.fetched_job = fetched[0]
+            return execution_data
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
