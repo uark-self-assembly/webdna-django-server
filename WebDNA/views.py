@@ -107,3 +107,30 @@ def celery_test(request):
     test.delay()
     return TestResponse.make()
 
+
+@api_view(['POST'])
+def set_project_settings(request):
+    serialized_body = ProjectSettingsSerializer(data=request.data)
+    if serialized_body.is_valid():
+        # will look like the following..
+        project_id = serialized_body.validated_data['project_id']
+
+        # TODO Implement a line that does something like the following
+        # util.generate_input_file(project_id, serialized_body.validated_data)
+
+        return Response(status=status.HTTP_201_CREATED)
+    else:
+        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def get_project_settings(request):
+    serialized_body = ProjectSettingsSerializer(data=request.data)
+    if serialized_body.is_valid():
+        project_id = serialized_body.validated_data['project_id']
+
+        # TODO Implement a line that does something like the following:
+        # data = util.get_input_file_as_serializer_data(project_id)
+        return Response(status=status.HTTP_201_CREATED)
+    else:
+        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
