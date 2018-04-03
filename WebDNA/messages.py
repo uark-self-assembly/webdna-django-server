@@ -8,3 +8,4 @@ EMAIL_TAKEN = "provided email is already registered"
 INVALID_PASSWORD_FORMAT = "password must be at least 8 characters," \
                           " and have at least one uppercase, lowercase, and numeral character"
 PROJECT_NOT_FOUND = "no project exists with the provided id"
+JOB_ALREADY_EXECUTING = "requested execution already running on server"

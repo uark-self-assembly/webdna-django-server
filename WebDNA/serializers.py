@@ -28,8 +28,10 @@ class ExecutionSerializer(serializers.Serializer):
         if not fetched:
             raise serializers.ValidationError(PROJECT_NOT_FOUND)
 
-        proj = fetched[0]
-        self.fetched_project = proj
+        self.fetched_project = fetched[0]
+
+        if self.fetched_project.job_running:
+            raise serializers.ValidationError(JOB_ALREADY_EXECUTING)
 
         return execution_data
 
