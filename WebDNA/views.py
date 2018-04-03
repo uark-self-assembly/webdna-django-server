@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from .serializers import *
 from .responses import *
 from .tasks import *
+from .messages import *
 import os
 from pprint import pprint
 from rest_framework import mixins
@@ -155,8 +156,9 @@ def set_project_settings(request):
         project_id = serialized_body.validated_data['project_id']
 
         # TODO Implement a line that does something like the following
-        generate_input_file(project_id, serialized_body.validated_data)
-
+        input_file_status = generate_input_file(project_id, serialized_body.validated_data)
+        if input_file_status == MISSING_PROJECT_FILES:
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response(status=status.HTTP_201_CREATED)
     else:

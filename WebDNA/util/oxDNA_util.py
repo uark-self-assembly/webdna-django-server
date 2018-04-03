@@ -1,5 +1,5 @@
 import os
-
+from WebDNA.messages import *
 
 def generate_input_file(project_id, data):
     # will assume sequence.txt exists
@@ -9,14 +9,16 @@ def generate_input_file(project_id, data):
     if not os.path.exists(project_path):
         os.makedirs(project_path)
 
-    os.path.isfile(project_path + '/generated.top')
-    os.path.isfile(project_path + '/generated.dat')
-    os.path.isfile(project_path + '/sequence.txt')
+    if not (os.path.isfile(project_path + '/generated.top') and
+            os.path.isfile(project_path + '/generated.dat') and
+            os.path.isfile(project_path + '/sequence.txt')):
+        return MISSING_PROJECT_FILES
 
     input_file = open(project_path + '/input.txt', 'w')
     for key, value in data.items():
         input_file.write(key + ' = ' + value + '\n')
     input_file.close()
+    return INPUT_GENERATED
 
 
 def get_input_file_as_serializer_data(project_id):
