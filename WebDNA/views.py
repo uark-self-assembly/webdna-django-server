@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view
 from .serializers import *
 from .responses import *
 from .tasks import *
+import os
 from pprint import pprint
 
 from rest_framework import mixins
@@ -24,9 +25,7 @@ class UserView(APIView):
         return Response(serializer.data)
 
 
-class ProjectList(
-        generics.CreateAPIView,
-        generics.ListAPIView):
+class ProjectList(generics.CreateAPIView, generics.ListAPIView):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
 
@@ -61,9 +60,20 @@ def register(request):
 
 
 # /api/execute
-@api_view(['GET'])
+@api_view(['POST'])
 def execute(request):
-    return Response(status=status.HTTP_202_ACCEPTED)
+    serialized_body = ExecutionSerializer(data=request.data)
+    if serialized_body.is_valid():
+        proj_path = "server-data/server-projects/" + serialized_body.validated_data['id']
+        if os.path.isdir(proj_path) and os.path.isfile(proj_path+"/input.txt"):
+            serialized_body.fetched_project.job_running = True
+            serialized_body.fetched_project.save(update_fields=['job_running'])
+            execute_sim.delay(serialized_body.validated_data['id'], proj_path)
+            return Response(status=status.HTTP_202_ACCEPTED)
+        else:
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
