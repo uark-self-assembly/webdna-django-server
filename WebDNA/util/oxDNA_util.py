@@ -14,7 +14,7 @@ def generate_input_file(project_id, data):
             os.path.isfile(project_path + '/sequence.txt')):
         return MISSING_PROJECT_FILES
 
-    input_file = open(project_path + '/input.txt', 'w')
+    input_file = open(file=project_path + '/input.txt', mode='w')
     for key, value in data.items():
         if key == 'project_id' or key == 'box_size':
             continue
@@ -27,4 +27,29 @@ def generate_input_file(project_id, data):
 
 
 def get_input_file_as_serializer_data(project_id):
-    pass
+    util_path = os.path.dirname(os.path.realpath(__file__))
+    project_path = util_path + '/../../server-data/server-projects/' + str(project_id)
+    if not os.path.isfile(project_path + '/input.txt'):
+        return MISSING_PROJECT_FILES
+
+    input_file = open(file=project_path + '/input.txt', mode='r')
+    input_dictionary = {}
+    for line in input_file.readlines():
+        if line[len(line) - 1] == '\n':
+            line = line[:-1]
+        key_and_value = line.split(' = ')
+        input_dictionary[key_and_value[0]] = key_and_value[1]
+    return input_dictionary
+
+
+def get_energy_file(project_id):
+    util_path = os.path.dirname(os.path.realpath(__file__))
+    project_path = util_path + '/../../server-data/server-projects/' + str(project_id)
+    if not os.path.isfile(project_path + '/energy.dat'):
+        return MISSING_PROJECT_FILES
+
+    energy_file = open(file=project_path + '/energy.dat', mode='r')
+    energy_string = ''
+    for line in energy_file.readlines():
+        energy_string = energy_string + line
+    return energy_string
