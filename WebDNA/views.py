@@ -26,6 +26,7 @@ class UserView(APIView):
         return Response(serializer.data)
 
 
+# /api/file/upload
 class FileUploadView(APIView):
     parser_classes = (MultiPartParser,)
 
@@ -124,6 +125,25 @@ def check_status(request):
 def celery_test(request):
     test.delay()
     return TestResponse.make()
+
+
+# /api/file/visual
+@api_view(['GET'])
+def get_visual(request):
+    serialized_body = VisualizationSerializer(data=request.data)
+    if serialized_body.is_valid():
+        views_path = os.path.dirname(os.path.realpath(__file__))
+        project_id = serialized_body.validated_data['project_id']
+        project_path = views_path + r'/../server-data/server-projects/' + project_id
+
+        if os.path.isfile(project_path + r'/trajectory.dat'):
+            file = get_PDB_file.delay(project_id)
+            response_data = {'file': file, 'project_id': project_id}
+            return JsonResponse(data=response_data, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
