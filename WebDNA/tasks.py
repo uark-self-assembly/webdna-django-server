@@ -36,9 +36,13 @@ def get_PDB_file(project_id):
         pdb_file_count[project_id] = 0
 
     process.wait()  # makes it blocking?
-    os.rename(project_path + r'/trajectory.dat.pdb', project_path + r'/' + pdb_file_count[proj_id] + r'trajectory.pdb')
-    # is returning an open file good practice (it may never be closed)?
-    return open(file=project_path + r'/' + pdb_file_count[project_id] + r'trajectory.pdb', mode='r')
+    os.rename(project_path + r'/trajectory.dat.pdb', project_path + r'/' + pdb_file_count[project_id] + r'trajectory.pdb')
+
+    trajectory_string = ''
+    trajectory_file = open(file=project_path + r'/' + pdb_file_count[project_id] + r'trajectory.pdb', mode='r')
+    for line in trajectory_file.readlines():
+        trajectory_string = trajectory_string + line
+    return trajectory_string
 
 
 @app.task

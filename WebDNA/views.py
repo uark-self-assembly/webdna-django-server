@@ -137,8 +137,8 @@ def get_visual(request):
         project_path = views_path + r'/../server-data/server-projects/' + project_id
 
         if os.path.isfile(project_path + r'/trajectory.dat'):
-            file = get_PDB_file.delay(project_id)
-            response_data = {'file': file, 'project_id': project_id}
+            file_string = get_PDB_file.delay(project_id)
+            response_data = {'file_string': file_string, 'project_id': project_id}
             return JsonResponse(data=response_data, status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
