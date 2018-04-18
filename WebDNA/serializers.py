@@ -41,6 +41,19 @@ class ExecutionSerializer(serializers.Serializer):
                 raise serializers.ValidationError(JOB_ALREADY_EXECUTING)
 
 
+class VisualizationSerializer(ExecutionSerializer):
+    def validate(self, execution_data):
+        project_id = execution_data['project_id']
+
+        query_set = Job.objects.all()
+        fetched = query_set.filter(project_id=project_id)
+        if not fetched:
+            raise serializers.ValidationError(JOB_NOT_FOUND)
+        else:
+            self.fetched_job = fetched[0]
+            return execution_data
+
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -187,58 +200,58 @@ class ProjectSettingsSerializer(serializers.Serializer):
     project_id = serializers.UUIDField()
 
     # Generation options
-    box_size = serializers.IntegerField(min_value=1, default=20)
+    box_size = serializers.IntegerField(min_value=1, default=20)# box side
 
     # Generic Options
     interaction_type = serializers.CharField(max_length=10, default='DNA')
     sim_type = serializers.CharField(max_length=10, default='MD')
-    backend = serializers.CharField(max_length=10)
+    backend = serializers.CharField(max_length=10, default='CPU')
     backend_precision = serializers.CharField(max_length=10)
-    debug = serializers.IntegerField(default=0, read_only=True)
+    debug = serializers.IntegerField(default=0, read_only=True, min_value=0, max_value=1)
 
     # Simulation Options
     steps = serializers.IntegerField()
-    restart_step_counter = serializers.IntegerField(default=0)
+    restart_step_counter = serializers.IntegerField(default=0, min_value=0, max_value=1)
     seed = serializers.IntegerField(default=randint)
     T = serializers.CharField(max_length=20)
-    fix_diffusion = serializers.IntegerField(default=1)
+    fix_diffusion = serializers.IntegerField(default=1, min_value=0, max_value=1)
     verlet_skin = serializers.FloatField()
-    back_in_box = serializers.IntegerField(default=0)
-    salt_concentration = serializers.FloatField()  # only used with DNA2
-    use_average_seq = serializers.IntegerField(default=1)
-    seq_dep_file = serializers.CharField(max_length=128)
+    back_in_box = serializers.IntegerField(default=0, min_value=0, max_value=1)
+    salt_concentration = serializers.FloatField(required=False)  # only used with DNA2
+    use_average_seq = serializers.IntegerField(default=1, min_value=0, max_value=1)
+    seq_dep_file = serializers.CharField(max_length=128, required=False)
     external_forces = serializers.IntegerField(default=0, min_value=0, max_value=1) # if 1, must set external_forces_file
-    external_forces_file = serializers.CharField(max_length=128)
+    external_forces_file = serializers.CharField(max_length=128, required=False)
 
     # Molecular Dynamics Simulations Options
-    dt = serializers.FloatField()
+    dt = serializers.FloatField(required=True)
     thermostat = serializers.CharField(max_length=10)
     newtonian_steps = serializers.IntegerField()  # required if thermostat != "no"
-    pt = serializers.FloatField()  # only used if thermostat == "john"
-    diff_coeff = serializers.FloatField()  # required if pt is not specified
+    pt = serializers.FloatField(required=False)  # only used if thermostat == "john"
+    diff_coeff = serializers.FloatField(required=True)  # required if pt is not specified
 
     # NOT USING MONTE CARLO SIMULATION SETTINGS
 
     # Input/Output
-    conf_file = serializers.CharField(max_length=128)
-    topology = serializers.CharField(max_length=128)
-    trajectory_file = serializers.CharField(max_length=128)
+    conf_file = serializers.CharField(max_length=128, required=False, default='generated.dat')
+    topology = serializers.CharField(max_length=128, default='generated.top')
+    trajectory_file = serializers.CharField(default='trajectory.dat', max_length=128)
     confs_to_skip = serializers.IntegerField(default=0) # only used if conf_file is a trajectory
     lastconf_file = serializers.CharField(max_length=128, default='last_conf.dat')
-    lastconf_file_bin = serializers.CharField(max_length=0)
+    lastconf_file_bin = serializers.CharField(max_length=0, required=False)
     binary_initial_conf = serializers.IntegerField(default=0, min_value=0, max_value=1)
     refresh_vel = serializers.IntegerField(default=0, min_value=0, max_value=1)
-    energy_file = serializers.CharField(max_length=128)
+    energy_file = serializers.CharField(default='energy.dat', max_length=128)
     print_energy_every = serializers.IntegerField(default=1000)
     no_stdout_energy = serializers.IntegerField(default=0, min_value=0, max_value=1)
     time_scale = serializers.CharField(default='linear', max_length=128)
-    print_conf_ppc = serializers.IntegerField()
-    print_conf_interval = serializers.IntegerField()
+    print_conf_ppc = serializers.IntegerField(required=False) # manditory only if time_scale==log_line
+    print_conf_interval = serializers.IntegerField(required=False)
     print_reduced_conf_every = serializers.IntegerField(default=0, min_value=0)
-    reduced_conf_output_dir = serializers.CharField(max_length=128)
-    log_file = serializers.CharField(max_length=128)
+    reduced_conf_output_dir = serializers.CharField(max_length=128, required=False) # if print_red_conf_every > 0
+    log_file = serializers.CharField(default='log.dat', max_length=128)
     print_timings = serializers.IntegerField(default=0, min_value=0, max_value=1)
-    timings_filename = serializers.CharField(max_length=128)
-    output_prefix = serializers.CharField(max_length=128)
+    timings_filename = serializers.CharField(max_length=128, required=False)
+    output_prefix = serializers.CharField(default='', max_length=128)
     print_input = serializers.IntegerField(default=0, min_value=0, max_value=1)
     equilibration_steps = serializers.IntegerField(default=0, min_value=0)
