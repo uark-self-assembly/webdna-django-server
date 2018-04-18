@@ -1,13 +1,9 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from .serializers import *
 from .responses import *
 from .tasks import *
-from .messages import *
-import os
-from pprint import pprint
-from rest_framework import mixins
 from rest_framework import generics
 from rest_framework.parsers import MultiPartParser
 from WebDNA.util.oxDNA_util import *
@@ -189,3 +185,27 @@ def get_project_settings(request):
 @api_view(['GET'])
 def get_energy(request):
     pass
+
+
+# /api/getpdb
+@api_view(['GET'])
+def get_pdb(request):
+    serialized_body = GetPDBSerializer(data=request.query_params)
+    if serialized_body.is_valid():
+        project_id = serialized_body.validated_data['project_id']
+        path = "server-data/server-projects/" + str(serialized_body.validated_data['project_id'])
+
+        if serialized_body.fetched_job.finish_time is not None:
+            if os.path.isfile(path+"/trajectory.dat") and os.path.isfile(path+"/generated.top"):
+                traj2pdb(serialized_body.fetched_job.id, path)
+            else:
+                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        with open(path + "/trajectory.pdb", 'r') as pdb_file:
+            response = HttpResponse(pdb_file, content_type='text/plain')
+            response['Content-Disposition'] = 'attachment; filename="trajectory.pdb"'
+
+        return response
+
+    else:
+        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)

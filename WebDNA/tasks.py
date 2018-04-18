@@ -4,15 +4,22 @@ from webdna_server.celery import app
 from WebDNA.models import *
 import subprocess
 import os
+import sys
 
 
 pdb_file_count = {}
 
 
+def traj2pdb(job_id, path):
+    p = subprocess.Popen(["traj2pdb.py", "trajectory.dat", "generated.top", "trajectory.pdb"],
+                         cwd=os.path.join(os.getcwd(), path))
+    p.wait()
+
+
 @app.task()
 def execute_sim(job_id, proj_id, path):
-    j = Job(id=job_id, process_name=execute_sim.request.id)
-    j.save(update_fields=['process_name'])
+    j = Job(id=job_id, process_name=execute_sim.request.id, finish_time=None)
+    j.save(update_fields=['process_name', 'finish_time'])
     print("Received new execution for project: " + proj_id)
     log = open(file=path + "/" + "stdout.log", mode='w')
     p = subprocess.Popen(["oxDNA", "input.txt"], cwd=os.getcwd() + "/" + path, stdout=log)
