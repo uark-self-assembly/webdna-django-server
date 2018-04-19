@@ -193,9 +193,9 @@ def get_pdb(request):
     serialized_body = GetPDBSerializer(data=request.query_params)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
-        path = "server-data/server-projects/" + str(serialized_body.validated_data['project_id'])
+        path = "server-data/server-projects/" + str(project_id)
 
-        if serialized_body.fetched_job.finish_time is not None:
+        if serialized_body.fetched_job.finish_time is None:
             if os.path.isfile(path+"/trajectory.dat") and os.path.isfile(path+"/generated.top"):
                 traj2pdb(serialized_body.fetched_job.id, path)
             else:
