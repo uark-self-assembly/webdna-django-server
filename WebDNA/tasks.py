@@ -20,6 +20,12 @@ def traj2pdb(job_id, path):
 def execute_sim(job_id, proj_id, path):
     j = Job(id=job_id, process_name=execute_sim.request.id, finish_time=None)
     j.save(update_fields=['process_name', 'finish_time'])
+
+    try:
+        os.remove(os.path.join(path, "trajectory.pdb"))
+    except OSError:
+        pass
+
     print("Received new execution for project: " + proj_id)
     log = open(file=path + "/" + "stdout.log", mode='w')
     p = subprocess.Popen(["oxDNA", "input.txt"], cwd=os.getcwd() + "/" + path, stdout=log)
@@ -27,6 +33,7 @@ def execute_sim(job_id, proj_id, path):
     log.close()
     j = Job(id=job_id, finish_time=timezone.now(), process_name=None)
     j.save(update_fields=['process_name', 'finish_time'])
+    print("Project " + proj_id + ": Simulation completed, now generating pdb file")
     traj2pdb(job_id, path)
 
 
