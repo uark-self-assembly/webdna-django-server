@@ -33,7 +33,7 @@ def execute_sim(job_id, proj_id, path):
     log.close()
     j = Job(id=job_id, finish_time=timezone.now(), process_name=None)
     j.save(update_fields=['process_name', 'finish_time'])
-    print("Project " + proj_id + ": Simulation completed, now generating pdb file")
+    print("Simulation completed, generating pdb file for project: " + proj_id)
     traj2pdb(job_id, path)
 
 
