@@ -9,6 +9,7 @@ from rest_framework import generics
 from rest_framework.parsers import MultiPartParser
 from WebDNA.util.oxDNA_util import *
 
+
 # NOTE: It is best practice to keep all validation (field, class, etc.) in serializers.py
 # A view should ideally call serializer validation and return responses based on the validation result
 # Refer to .register for an example of a good view definition
@@ -33,12 +34,13 @@ class FileUploadView(APIView):
         file_obj = request.data['file']
         project_id = request.data['id']
         file_name = request.data['type']  # 'sequence.txt', 'seq_dep.txt', or 'external_forces.txt'
-        views_file_path = os.path.dirname(os.path.realpath(__file__))
-        new_file_path = views_file_path + '/../server-data/server-projects/' + project_id + '/' + file_name
+
+        new_file_path = os.path.join('server-data', 'server-projects', project_id, file_name)
 
         new_file = open(file=new_file_path, mode='wb')
         for line in file_obj.readlines():
             new_file.write(line)
+
         new_file.close()
         return ErrorResponse.make(status=status.HTTP_204_NO_CONTENT)
 
@@ -98,10 +100,12 @@ def execute(request):
         if job is None:
             job = serialized_body.create(serialized_body.validated_data)
 
-        proj_path = "server-data/server-projects/" + serialized_body.validated_data['project_id']
+        project_id = serialized_body.validated_data['project_id']
+        path = os.path.join('server-data', 'server-projects', str(project_id))
 
-        if os.path.isdir(proj_path) and os.path.isfile(proj_path+"/input.txt"):
-            execute_sim.delay(job.id, job.project_id, proj_path)
+        input_file = os.path.join(path, 'input.txt')
+        if os.path.isdir(path) and os.path.isfile(input_file):
+            execute_sim.delay(job.id, job.project_id, path)
             return ExecutionResponse.make()
         else:
             return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -114,20 +118,23 @@ def execute(request):
 def check_status(request):
     serialized_body = CheckStatusSerializer(data=request.data)
     if serialized_body.is_valid():
-        path = "server-data/server-projects/" + str(serialized_body.validated_data['project_id'])
+        project_id = serialized_body.validated_data['project_id']
+        path = os.path.join('server-data', 'server-projects', str(project_id))
         running = True
 
         if serialized_body.fetched_job.finish_time is not None:
             running = False
 
-        if os.path.isfile(path + '/stdout.log'):
-            with open(path + '/stdout.log', 'r') as log:
+        stdout_file = os.path.join(path, 'stdout.log')
+        if os.path.isfile(stdout_file):
+            with open(stdout_file, 'r') as log:
                 stdout_string = log.read()
         else:
             stdout_string = ''
 
-        if os.path.isfile(path + '/log.dat'):
-            with open(path + '/log.dat', 'r') as logdatfile:
+        log_file = os.path.join(path, 'log.dat')
+        if os.path.isfile(log_file):
+            with open(log_file, 'r') as logdatfile:
                 log_string = logdatfile.read()
         else:
             log_string = ''
@@ -145,10 +152,11 @@ def get_visual(request):
     if serialized_body.is_valid():
         views_path = os.path.dirname(os.path.realpath(__file__))
         project_id = serialized_body.validated_data['project_id']
-        project_path = views_path + r'/../server-data/server-projects/' + project_id
+        project_path = os.path.join('server-data', 'server-projects', str(project_id))
 
-        if os.path.isfile(project_path + r'/trajectory.dat'):
-            file_string = get_PDB_file.delay(project_id)
+        trajectory_file = os.path.join(project_path, 'trajectory.dat')
+        if os.path.isfile(trajectory_file):
+            file_string = get_pdb_file.delay(project_id)
             response_data = {'file_string': file_string, 'project_id': project_id}
             return ObjectResponse.make(obj=response_data)
         else:
@@ -201,15 +209,17 @@ def get_pdb(request):
     serialized_body = GetPDBSerializer(data=request.query_params)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
-        path = "server-data/server-projects/" + str(project_id)
+        path = os.path.join('server-data', 'server-projects', str(project_id))
 
         if serialized_body.fetched_job.finish_time is None:
-            if os.path.isfile(path+"/trajectory.dat") and os.path.isfile(path+"/generated.top"):
+            trajectory_file = os.path.join(path, 'trajectory.dat')
+            generated_file = os.path.join(path, 'generated.top')
+            if os.path.isfile(trajectory_file) and os.path.isfile(generated_file):
                 traj2pdb(serialized_body.fetched_job.id, path)
             else:
                 return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        with open(path + "/trajectory.pdb", 'r') as pdb_file:
+        with open(os.path.join(path, 'trajectory.pdb', 'r')) as pdb_file:
             response = HttpResponse(pdb_file, content_type='text/plain')
             response['Content-Disposition'] = 'attachment; filename="trajectory.pdb"'
 
