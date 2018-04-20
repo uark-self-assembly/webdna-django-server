@@ -2,17 +2,31 @@ from __future__ import absolute_import
 
 import os
 import subprocess
-
+from zipfile import ZipFile
 from WebDNA.models import *
 from webdna_server.celery import app
 
 pdb_file_count = {}
 
 
-def traj2pdb(job_id, path):
+def traj2pdb(path):
     process = subprocess.Popen(["traj2pdb.py", "trajectory.dat", "generated.top", "trajectory.pdb"],
                          cwd=os.path.join(os.getcwd(), path))
     process.wait()
+
+
+def traj2xtc(path):
+    process = subprocess.Popen(["gmx", "trjconv", "-f", "trajectory.pdb", "-o", "trajectory.xtc"],
+                               cwd=os.path.join(os.getcwd(), path))
+    process.wait()
+
+
+def zip_traj(project_id, path):
+        if os.path.exists(os.path.join(path, 'trajectory.pdb')):
+            if os.path.exists(os.path.join(path, 'trajectory.xtc')):
+                with ZipFile(os.path.join(path, str(project_id) + '.zip'), 'w') as archive:
+                    archive.write(os.path.join(path, 'trajectory.pdb'), 'trajectory.pdb')
+                    archive.write(os.path.join(path, 'trajectory.xtc'), 'trajectory.xtc')
 
 
 @app.task()
@@ -21,14 +35,16 @@ def execute_sim(job_id, project_id, path):
     job.save(update_fields=['process_name', 'finish_time'])
 
     try:
+        os.remove(os.path.join(path, "trajectory.xtc"))
         os.remove(os.path.join(path, "trajectory.pdb"))
+        os.remove(os.path.join(path, project_id + ".zip"))
     except OSError:
         pass
 
     print("Received new execution for project: " + project_id)
     log_file = os.path.join(path, 'stdout.log')
     log = open(file=log_file, mode='w')
-    cwd = os.path.join(os.getcwd(), 'path')
+    cwd = os.path.join(os.getcwd(), path)
 
     process = subprocess.Popen(["oxDNA", "input.txt"], cwd=cwd, stdout=log)
 
@@ -39,7 +55,7 @@ def execute_sim(job_id, project_id, path):
     job.save(update_fields=['process_name', 'finish_time'])
 
     print("Simulation completed, generating pdb file for project: " + project_id)
-    traj2pdb(job_id, path)
+    traj2pdb(path)
 
 
 @app.task()

@@ -9,7 +9,6 @@ from rest_framework import generics
 from rest_framework.parsers import MultiPartParser
 from WebDNA.util.oxDNA_util import *
 
-
 # NOTE: It is best practice to keep all validation (field, class, etc.) in serializers.py
 # A view should ideally call serializer validation and return responses based on the validation result
 # Refer to .register for an example of a good view definition
@@ -211,9 +210,9 @@ def get_energy(request):
     pass
 
 
-# /api/getpdb
+# /api/trajectory
 @api_view(['GET'])
-def get_pdb(request):
+def fetch_traj(request):
     serialized_body = GetPDBSerializer(data=request.query_params)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
@@ -221,16 +220,18 @@ def get_pdb(request):
 
         if serialized_body.fetched_job.finish_time is None:
             trajectory_file = os.path.join(path, 'trajectory.dat')
-            generated_file = os.path.join(path, 'generated.top')
-            if os.path.isfile(trajectory_file) and os.path.isfile(generated_file):
-                traj2pdb(serialized_body.fetched_job.id, path)
+            topology_file = os.path.join(path, 'generated.top')
+            if os.path.isfile(trajectory_file) and os.path.isfile(topology_file):
+                traj2pdb(path)
+                traj2xtc(path)
+                zip_traj(project_id, path)
             else:
                 return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        with open(os.path.join(path, 'trajectory.pdb', 'r')) as pdb_file:
-            response = HttpResponse(pdb_file, content_type='text/plain')
-            response['Content-Disposition'] = 'attachment; filename="trajectory.pdb"'
-
+        with open(os.path.join(path, str(project_id) + '.zip'), 'rb') as archive_file:
+            response = HttpResponse(archive_file, content_type='application/zip')
+            response['Content-Disposition'] = 'attachment; filename="'+str(project_id)+'.zip"'
+            archive_file.close()
         return response
 
     else:
