@@ -1,49 +1,54 @@
 from __future__ import absolute_import
-from django.utils import timezone
-from webdna_server.celery import app
-from WebDNA.models import *
-import subprocess
-import os
-import sys
 
+import os
+import subprocess
+
+from WebDNA.models import *
+from webdna_server.celery import app
 
 pdb_file_count = {}
 
 
 def traj2pdb(job_id, path):
-    p = subprocess.Popen(["traj2pdb.py", "trajectory.dat", "generated.top", "trajectory.pdb"],
+    process = subprocess.Popen(["traj2pdb.py", "trajectory.dat", "generated.top", "trajectory.pdb"],
                          cwd=os.path.join(os.getcwd(), path))
-    p.wait()
+    process.wait()
 
 
 @app.task()
-def execute_sim(job_id, proj_id, path):
-    j = Job(id=job_id, process_name=execute_sim.request.id, finish_time=None)
-    j.save(update_fields=['process_name', 'finish_time'])
+def execute_sim(job_id, project_id, path):
+    job = Job(id=job_id, process_name=execute_sim.request.id, finish_time=None)
+    job.save(update_fields=['process_name', 'finish_time'])
 
     try:
         os.remove(os.path.join(path, "trajectory.pdb"))
     except OSError:
         pass
 
-    print("Received new execution for project: " + proj_id)
-    log = open(file=path + "/" + "stdout.log", mode='w')
-    p = subprocess.Popen(["oxDNA", "input.txt"], cwd=os.getcwd() + "/" + path, stdout=log)
-    p.wait()
+    print("Received new execution for project: " + project_id)
+    log_file = os.path.join(path, 'stdout.log')
+    log = open(file=log_file, mode='w')
+    cwd = os.path.join(os.getcwd(), 'path')
+
+    process = subprocess.Popen(["oxDNA", "input.txt"], cwd=cwd, stdout=log)
+
+    process.wait()
     log.close()
-    j = Job(id=job_id, finish_time=timezone.now(), process_name=None)
-    j.save(update_fields=['process_name', 'finish_time'])
-    print("Simulation completed, generating pdb file for project: " + proj_id)
+
+    job = Job(id=job_id, finish_time=timezone.now(), process_name=None)
+    job.save(update_fields=['process_name', 'finish_time'])
+
+    print("Simulation completed, generating pdb file for project: " + project_id)
     traj2pdb(job_id, path)
 
 
 @app.task()
-def get_PDB_file(project_id):
+def get_pdb_file(project_id):
     tasks_path = os.path.dirname(os.path.realpath(__file__))
     project_path = tasks_path + r'/../server-data/server-projects/' + project_id
-    PDB_script_path = project_path + r'/../../../oxDNA/UTILS/traj2pdb.py'
+    pdb_script_path = project_path + r'/../../../oxDNA/UTILS/traj2pdb.py'
     # python_script = 'python ' + PDB_script_path ## even needed? use python3?
-    process = subprocess.Popen([PDB_script_path, 'trajectory.dat', 'generated.top'], cwd=project_path)
+    process = subprocess.Popen([pdb_script_path, 'trajectory.dat', 'generated.top'], cwd=project_path)
 
     if project_id in pdb_file_count:
         pdb_file_count[project_id] = pdb_file_count[project_id] + 1
@@ -59,8 +64,3 @@ def get_PDB_file(project_id):
     for line in trajectory_file.readlines():
         trajectory_string = trajectory_string + line  # includes newline character
     return trajectory_string
-
-
-@app.task
-def test():
-    print("Test task received from WebDNA server!")
