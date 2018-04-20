@@ -10,9 +10,9 @@ pdb_file_count = {}
 
 
 def traj2pdb(job_id, path):
-    p = subprocess.Popen(["traj2pdb.py", "trajectory.dat", "generated.top", "trajectory.pdb"],
+    process = subprocess.Popen(["traj2pdb.py", "trajectory.dat", "generated.top", "trajectory.pdb"],
                          cwd=os.path.join(os.getcwd(), path))
-    p.wait()
+    process.wait()
 
 
 @app.task()
@@ -30,9 +30,9 @@ def execute_sim(job_id, project_id, path):
     log = open(file=log_file, mode='w')
     cwd = os.path.join(os.getcwd(), 'path')
 
-    p = subprocess.Popen(["oxDNA", "input.txt"], cwd=cwd, stdout=log)
+    process = subprocess.Popen(["oxDNA", "input.txt"], cwd=cwd, stdout=log)
 
-    p.wait()
+    process.wait()
     log.close()
 
     job = Job(id=job_id, finish_time=timezone.now(), process_name=None)
