@@ -68,6 +68,14 @@ class ProjectView(generics.RetrieveUpdateDestroyAPIView):
         response = generics.RetrieveUpdateDestroyAPIView.get(self, request, args, kwargs)
         return ObjectResponse.make(response=response)
 
+    def put(self, request, *args, **kwargs):
+        response = generics.RetrieveUpdateDestroyAPIView.put(self, request, args, kwargs)
+        return ObjectResponse.make(response=response)
+
+    def delete(self, request, *args, **kwargs):
+        response = generics.RetrieveUpdateDestroyAPIView.delete(self, request, args, kwargs)
+        return ObjectResponse.make(response=response)
+
 
 # /api/login
 @api_view(['POST'])
