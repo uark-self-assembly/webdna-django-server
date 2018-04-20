@@ -48,7 +48,7 @@ class ObjectResponse:
 
 class AuthenticationResponse:
     @staticmethod
-    def make(user, status=http_status.HTTP_200_OK, message='authenticated'):
+    def make(user, status=http_status.HTTP_200_OK, message='success'):
         return ObjectResponse.make(
             obj={
                 'user': user,
@@ -65,7 +65,7 @@ class RegistrationResponse:
         return AuthenticationResponse.make(
             user=user,
             status=http_status.HTTP_201_CREATED,
-            message='registered'
+            message='success'
         )
 
 
