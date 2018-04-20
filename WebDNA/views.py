@@ -185,7 +185,7 @@ def set_project_settings(request):
         if input_file_status == MISSING_PROJECT_FILES:
             return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
 
-        return DefaultResponse.make(status.HTTP_201_CREATED, message='created')
+        return DefaultResponse.make(status.HTTP_201_CREATED)
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
 
