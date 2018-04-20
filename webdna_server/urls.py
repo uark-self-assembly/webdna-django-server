@@ -26,7 +26,6 @@ urlpatterns = [
     url(r'^api/login/', views.login),
     url(r'^api/register', views.register),
     url(r'^api/execute', views.execute),
-    url(r'^api/test', views.celery_test),
     url(r'^api/checkstatus', views.check_status),
     url(r'^api/applysettings', views.set_project_settings),
     url(r'^api/getsettings', views.get_project_settings),

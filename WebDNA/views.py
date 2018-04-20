@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from .serializers import *
 from .responses import *
 from .tasks import *
+from rest_framework import status
 from rest_framework import generics
 from rest_framework.parsers import MultiPartParser
 from WebDNA.util.oxDNA_util import *
@@ -21,7 +22,7 @@ class UserView(APIView):
     def get(self, request):
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
-        return Response(serializer.data)
+        return ObjectResponse.make(obj=serializer.data)
 
 
 # /api/file/upload
@@ -39,12 +40,20 @@ class FileUploadView(APIView):
         for line in file_obj.readlines():
             new_file.write(line)
         new_file.close()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return ErrorResponse.make(status=status.HTTP_204_NO_CONTENT)
 
 
 class ProjectList(generics.CreateAPIView, generics.ListAPIView):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+
+    def post(self, request, *args, **kwargs):
+        response = generics.CreateAPIView.post(self, request, args, kwargs)
+        return ObjectResponse.make(response=response)
+
+    def get(self, request, *args, **kwargs):
+        response = generics.ListAPIView.get(self, request, args, kwargs)
+        return ObjectResponse.make(response=response)
 
 
 # /api/projects
@@ -52,6 +61,10 @@ class ProjectView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'id'
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+
+    def get(self, request, *args, **kwargs):
+        response = generics.RetrieveUpdateDestroyAPIView.get(self, request, args, kwargs)
+        return ObjectResponse.make(response=response)
 
 
 # /api/login
@@ -62,7 +75,7 @@ def login(request):
         user_serializer = UserSerializer(instance=serialized_body.fetched_user)
         return AuthenticationResponse.make(user_serializer.data)
     else:
-        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+        return ErrorResponse.make(status=status.HTTP_400_BAD_REQUEST, errors=serialized_body.errors)
 
 
 # /api/register
@@ -72,8 +85,8 @@ def register(request):
     if serialized_body.is_valid():
         user_serializer = UserSerializer(instance=serialized_body.save())
         return RegistrationResponse.make(user_serializer.data)
-
-    return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        return ErrorResponse.make(errors=serialized_body.errors)
 
 
 # /api/execute
@@ -89,11 +102,11 @@ def execute(request):
 
         if os.path.isdir(proj_path) and os.path.isfile(proj_path+"/input.txt"):
             execute_sim.delay(job.id, job.project_id, proj_path)
-            return Response(status=status.HTTP_202_ACCEPTED)
+            return ExecutionResponse.make()
         else:
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
-        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+        return ErrorResponse.make(errors=serialized_body.errors)
 
 
 # /api/checkstatus
@@ -120,15 +133,9 @@ def check_status(request):
             log_string = ''
 
         response_data = {'running': running, 'log': log_string, 'stdout': stdout_string}
-        return JsonResponse(data=response_data, status=status.HTTP_200_OK)
+        return ObjectResponse.make(response_data)
     else:
-        return Response(serialized_body.errors, status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET'])
-def celery_test(request):
-    test.delay()
-    return TestResponse.make()
+        return ErrorResponse.make(errors=serialized_body.errors)
 
 
 # /api/file/visual
@@ -143,11 +150,11 @@ def get_visual(request):
         if os.path.isfile(project_path + r'/trajectory.dat'):
             file_string = get_PDB_file.delay(project_id)
             response_data = {'file_string': file_string, 'project_id': project_id}
-            return JsonResponse(data=response_data, status=status.HTTP_200_OK)
+            return ObjectResponse.make(obj=response_data)
         else:
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
     else:
-        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+        return ErrorResponse.make(errors=serialized_body.errors)
 
 
 @api_view(['POST'])
@@ -160,11 +167,11 @@ def set_project_settings(request):
         # TODO Implement a line that does something like the following
         input_file_status = generate_input_file(project_id, serialized_body.validated_data)
         if input_file_status == MISSING_PROJECT_FILES:
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
 
-        return Response(status=status.HTTP_201_CREATED)
+        return DefaultResponse.make(status.HTTP_201_CREATED, message='created')
     else:
-        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+        return ErrorResponse.make(errors=serialized_body.errors)
 
 
 @api_view(['GET'])
@@ -176,10 +183,11 @@ def get_project_settings(request):
         # TODO Implement a line that does something like the following:
         input_data = get_input_file_as_serializer_data(project_id)
         if input_data == MISSING_PROJECT_FILES:
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        return JsonResponse(data=input_data, status=status.HTTP_200_OK)
+            return ErrorResponse.make(status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
+
+        return ObjectResponse.make(obj=input_data)
     else:
-        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+        return ErrorResponse.make(serialized_body.errors)
 
 
 @api_view(['GET'])
@@ -199,7 +207,7 @@ def get_pdb(request):
             if os.path.isfile(path+"/trajectory.dat") and os.path.isfile(path+"/generated.top"):
                 traj2pdb(serialized_body.fetched_job.id, path)
             else:
-                return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         with open(path + "/trajectory.pdb", 'r') as pdb_file:
             response = HttpResponse(pdb_file, content_type='text/plain')
@@ -208,4 +216,4 @@ def get_pdb(request):
         return response
 
     else:
-        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+        return ErrorResponse.make(errors=serialized_body.errors)

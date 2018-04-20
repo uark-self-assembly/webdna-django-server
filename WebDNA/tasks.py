@@ -59,8 +59,3 @@ def get_PDB_file(project_id):
     for line in trajectory_file.readlines():
         trajectory_string = trajectory_string + line  # includes newline character
     return trajectory_string
-
-
-@app.task
-def test():
-    print("Test task received from WebDNA server!")
