@@ -41,6 +41,40 @@ class ExecutionSerializer(serializers.Serializer):
                 raise serializers.ValidationError(JOB_ALREADY_EXECUTING)
 
 
+class OutputSerializer(serializers.Serializer):
+    class Meta:
+        model = Project
+        fields = 'project_id'
+
+    project_id = serializers.CharField(max_length=36)
+    fetched_job = None
+
+    def create(self, validated_data):
+        job = Job.objects.create(project_id=validated_data['project_id'])
+        job.save()
+        return job
+
+    def update(self, instance, validated_data):
+        pass
+
+    def validate(self, execution_data):
+        project_id = execution_data['project_id']
+
+        query_set = Project.objects.all()
+        fetched = query_set.filter(id=project_id)
+        if not fetched:
+            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+
+        query_set = Job.objects.all()
+        fetched = query_set.filter(project_id=project_id)
+        if not fetched:
+            return execution_data
+        else:
+            self.fetched_job = fetched[0]
+            if self.fetched_job.finish_time is None:
+                raise serializers.ValidationError(JOB_ALREADY_EXECUTING)
+
+
 class VisualizationSerializer(ExecutionSerializer):
     def validate(self, execution_data):
         project_id = execution_data['project_id']
