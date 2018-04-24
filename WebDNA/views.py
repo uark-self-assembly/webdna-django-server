@@ -1,13 +1,10 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from .serializers import *
 from .responses import *
 from .tasks import *
-from .messages import *
-import os
-from pprint import pprint
-from rest_framework import mixins
+from rest_framework import status
 from rest_framework import generics
 from rest_framework.parsers import MultiPartParser
 from WebDNA.util.oxDNA_util import *
@@ -25,7 +22,7 @@ class UserView(APIView):
     def get(self, request):
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
-        return Response(serializer.data)
+        return ObjectResponse.make(obj=serializer.data)
 
 
 # /api/file/upload
@@ -36,19 +33,28 @@ class FileUploadView(APIView):
         file_obj = request.data['file']
         project_id = request.data['id']
         file_name = request.data['type']  # 'sequence.txt', 'seq_dep.txt', or 'external_forces.txt'
-        views_file_path = os.path.dirname(os.path.realpath(__file__))
-        new_file_path = views_file_path + '/../server-data/server-projects/' + project_id + '/' + file_name
+
+        new_file_path = os.path.join('server-data', 'server-projects', project_id, file_name)
 
         new_file = open(file=new_file_path, mode='wb')
         for line in file_obj.readlines():
             new_file.write(line)
+
         new_file.close()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return ErrorResponse.make(status=status.HTTP_204_NO_CONTENT)
 
 
 class ProjectList(generics.CreateAPIView, generics.ListAPIView):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+
+    def post(self, request, *args, **kwargs):
+        response = generics.CreateAPIView.post(self, request, args, kwargs)
+        return ObjectResponse.make(response=response)
+
+    def get(self, request, *args, **kwargs):
+        response = generics.ListAPIView.get(self, request, args, kwargs)
+        return ObjectResponse.make(response=response)
 
 
 # /api/projects
@@ -56,6 +62,18 @@ class ProjectView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'id'
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+
+    def get(self, request, *args, **kwargs):
+        response = generics.RetrieveUpdateDestroyAPIView.get(self, request, args, kwargs)
+        return ObjectResponse.make(response=response)
+
+    def put(self, request, *args, **kwargs):
+        response = generics.RetrieveUpdateDestroyAPIView.put(self, request, args, kwargs)
+        return ObjectResponse.make(response=response)
+
+    def delete(self, request, *args, **kwargs):
+        response = generics.RetrieveUpdateDestroyAPIView.delete(self, request, args, kwargs)
+        return ObjectResponse.make(response=response)
 
 
 # /api/login
@@ -66,7 +84,7 @@ def login(request):
         user_serializer = UserSerializer(instance=serialized_body.fetched_user)
         return AuthenticationResponse.make(user_serializer.data)
     else:
-        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+        return ErrorResponse.make(status=status.HTTP_400_BAD_REQUEST, errors=serialized_body.errors)
 
 
 # /api/register
@@ -76,8 +94,8 @@ def register(request):
     if serialized_body.is_valid():
         user_serializer = UserSerializer(instance=serialized_body.save())
         return RegistrationResponse.make(user_serializer.data)
-
-    return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        return ErrorResponse.make(errors=serialized_body.errors)
 
 
 # /api/execute
@@ -89,15 +107,17 @@ def execute(request):
         if job is None:
             job = serialized_body.create(serialized_body.validated_data)
 
-        proj_path = "server-data/server-projects/" + serialized_body.validated_data['project_id']
+        project_id = serialized_body.validated_data['project_id']
+        path = os.path.join('server-data', 'server-projects', str(project_id))
 
-        if os.path.isdir(proj_path) and os.path.isfile(proj_path+"/input.txt"):
-            execute_sim.delay(job.id, job.project_id, proj_path)
-            return Response(status=status.HTTP_202_ACCEPTED)
+        input_file = os.path.join(path, 'input.txt')
+        if os.path.isdir(path) and os.path.isfile(input_file):
+            execute_sim.delay(job.id, job.project_id, path)
+            return ExecutionResponse.make()
         else:
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
-        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+        return ErrorResponse.make(errors=serialized_body.errors)
 
 
 # /api/checkstatus
@@ -105,34 +125,31 @@ def execute(request):
 def check_status(request):
     serialized_body = CheckStatusSerializer(data=request.data)
     if serialized_body.is_valid():
-        path = "server-data/server-projects/" + str(serialized_body.validated_data['project_id'])
+        project_id = serialized_body.validated_data['project_id']
+        path = os.path.join('server-data', 'server-projects', str(project_id))
         running = True
 
         if serialized_body.fetched_job.finish_time is not None:
             running = False
 
-        if os.path.isfile(path + '/stdout.log'):
-            with open(path + '/stdout.log', 'r') as log:
+        stdout_file = os.path.join(path, 'stdout.log')
+        if os.path.isfile(stdout_file):
+            with open(stdout_file, 'r') as log:
                 stdout_string = log.read()
         else:
             stdout_string = ''
 
-        if os.path.isfile(path + '/log.dat'):
-            with open(path + '/log.dat', 'r') as logdatfile:
+        log_file = os.path.join(path, 'log.dat')
+        if os.path.isfile(log_file):
+            with open(log_file, 'r') as logdatfile:
                 log_string = logdatfile.read()
         else:
             log_string = ''
 
         response_data = {'running': running, 'log': log_string, 'stdout': stdout_string}
-        return JsonResponse(data=response_data, status=status.HTTP_200_OK)
+        return ObjectResponse.make(response_data)
     else:
-        return Response(serialized_body.errors, status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET'])
-def celery_test(request):
-    test.delay()
-    return TestResponse.make()
+        return ErrorResponse.make(errors=serialized_body.errors)
 
 
 # /api/file/visual
@@ -142,16 +159,17 @@ def get_visual(request):
     if serialized_body.is_valid():
         views_path = os.path.dirname(os.path.realpath(__file__))
         project_id = serialized_body.validated_data['project_id']
-        project_path = views_path + r'/../server-data/server-projects/' + project_id
+        project_path = os.path.join('server-data', 'server-projects', str(project_id))
 
-        if os.path.isfile(project_path + r'/trajectory.dat'):
-            file_string = get_PDB_file.delay(project_id)
+        trajectory_file = os.path.join(project_path, 'trajectory.dat')
+        if os.path.isfile(trajectory_file):
+            file_string = get_pdb_file.delay(project_id)
             response_data = {'file_string': file_string, 'project_id': project_id}
-            return JsonResponse(data=response_data, status=status.HTTP_200_OK)
+            return ObjectResponse.make(obj=response_data)
         else:
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
     else:
-        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+        return ErrorResponse.make(errors=serialized_body.errors)
 
 
 @api_view(['POST'])
@@ -164,11 +182,11 @@ def set_project_settings(request):
         # TODO Implement a line that does something like the following
         input_file_status = generate_input_file(project_id, serialized_body.validated_data)
         if input_file_status == MISSING_PROJECT_FILES:
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
 
-        return Response(status=status.HTTP_201_CREATED)
+        return DefaultResponse.make(status.HTTP_201_CREATED)
     else:
-        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+        return ErrorResponse.make(errors=serialized_body.errors)
 
 
 @api_view(['GET'])
@@ -180,12 +198,41 @@ def get_project_settings(request):
         # TODO Implement a line that does something like the following:
         input_data = get_input_file_as_serializer_data(project_id)
         if input_data == MISSING_PROJECT_FILES:
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        return JsonResponse(data=input_data, status=status.HTTP_200_OK)
+            return ErrorResponse.make(status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
+
+        return ObjectResponse.make(obj=input_data)
     else:
-        return Response(serialized_body.errors, status=status.HTTP_400_BAD_REQUEST)
+        return ErrorResponse.make(serialized_body.errors)
 
 
 @api_view(['GET'])
 def get_energy(request):
     pass
+
+
+# /api/trajectory
+@api_view(['GET'])
+def fetch_traj(request):
+    serialized_body = GetPDBSerializer(data=request.query_params)
+    if serialized_body.is_valid():
+        project_id = serialized_body.validated_data['project_id']
+        path = os.path.join('server-data', 'server-projects', str(project_id))
+
+        if serialized_body.fetched_job.finish_time is None:
+            trajectory_file = os.path.join(path, 'trajectory.dat')
+            topology_file = os.path.join(path, 'generated.top')
+            if os.path.isfile(trajectory_file) and os.path.isfile(topology_file):
+                traj2pdb(path)
+                traj2xtc(path)
+                zip_traj(project_id, path)
+            else:
+                return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        with open(os.path.join(path, str(project_id) + '.zip'), 'rb') as archive_file:
+            response = HttpResponse(archive_file, content_type='application/zip')
+            response['Content-Disposition'] = 'attachment; filename="'+str(project_id)+'.zip"'
+            archive_file.close()
+        return response
+
+    else:
+        return ErrorResponse.make(errors=serialized_body.errors)

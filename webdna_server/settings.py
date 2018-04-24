@@ -151,4 +151,3 @@ CELERY_BROKER_URL = 'amqp://django_server:productionpass@localhost/webdna-produc
 CELERY_BACKEND = 'rpc://'
 CELERY_INCLUDE = 'WebDNA.tasks'
 
-
