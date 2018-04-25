@@ -7,7 +7,7 @@ WebDNA is a user-centric software designed around the [oxDNA](https://dna.physic
 ## For the Developers
 You should adjust your environment according to below:
 1. Add oxDNA/UTILS and oxDNA/build/bin to PATH:
-    1. Add export PATH="/usr/local/bin/oxDNA/build/bin:/usr/local/bin/oxDNA/UTILS:$PATH" to ~/.profile
+<br>&emsp;Add export PATH="/usr/local/bin/oxDNA/build/bin:/usr/local/bin/oxDNA/UTILS:$PATH" to ~/.profile
 2. Run "chmod +wx *.py" in UTILS directory
 3. Also run "sed -i '1i #!/usr/bin/env python2' *.py" in UTILS directory
 
