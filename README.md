@@ -5,6 +5,11 @@ This repository holds the Django Server running the WebDNA backend. It is an ope
 WebDNA is a user-centric software designed around the [oxDNA](https://dna.physics.ox.ac.uk/index.php/Main_Page) simulation software. This API serves as the view to a managed simulation environment, featuring user accounts, custom data manipulation (via Python scripts), and much more.
 
 ## For the Developers
+You should adjust your environment according to below:
+1. Add oxDNA/UTILS and oxDNA/build/bin to PATH:
+    1. Add export PATH="/usr/local/bin/oxDNA/build/bin:/usr/local/bin/oxDNA/UTILS:$PATH" to ~/.profile
+2. Run "chmod +wx *.py" in UTILS directory
+3. Also run "sed -i '1i #!/usr/bin/env python2' *.py" in UTILS directory
 
 We'll outline here what all is needed to get this server up and running on your machine.
 There are two main components (so far):<br>
