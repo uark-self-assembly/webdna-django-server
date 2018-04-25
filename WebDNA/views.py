@@ -32,9 +32,12 @@ class FileUploadView(APIView):
     def put(self, request):
         file_obj = request.data['file']
         project_id = request.data['id']
-        file_name = request.data['type']  # 'sequence.txt', 'seq_dep.txt', or 'external_forces.txt'
+        file_name = request.data['type']  # Any kind of file in project to edit
 
         new_file_path = os.path.join('server-data', 'server-projects', project_id, file_name)
+
+        if os.path.isfile(new_file_path):
+            os.remove(new_file_path)
 
         new_file = open(file=new_file_path, mode='wb')
         for line in file_obj.readlines():
