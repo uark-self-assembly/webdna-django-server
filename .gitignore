@@ -164,3 +164,5 @@ crashlytics-build.properties
 fabric.properties
 \.idea/webdna_server\.iml
 \.idea/misc\.xml
+
+\.idea/webdna-django-server\.iml
