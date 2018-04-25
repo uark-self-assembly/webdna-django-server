@@ -211,10 +211,16 @@ def get_project_settings(request):
         return ErrorResponse.make(serialized_body.errors)
 
 
-# /api/getfile
+# /api/file/getfile
 @api_view(['GET'])
-def get_energy(request):
-    pass
+def get_file(request):
+    serialized_body = FileSerializer(data=request.data)
+    if serialized_body.is_valid():
+        project_id = serialized_body.validated_data['project_id']
+        file_name = serialized_body.validated_data['file_name']
+        return get_file_string(project_id, file_name)
+    else:
+        return ErrorResponse.make(serialized_body.errors)
 
 
 # /api/trajectory

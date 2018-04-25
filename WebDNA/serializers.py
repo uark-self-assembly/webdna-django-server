@@ -5,6 +5,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from .messages import *
 import re
 import random
+import os
 
 
 class ExecutionSerializer(serializers.Serializer):
@@ -43,39 +44,22 @@ class ExecutionSerializer(serializers.Serializer):
                 return execution_data
 
 
-class OutputSerializer(serializers.Serializer):
-    class Meta:
-        model = Project
-        fields = 'project_id'
-
-    project_id = serializers.CharField(max_length=36)
-    fetched_job = None
-
-    def create(self, validated_data):
-        job = Job.objects.create(project_id=validated_data['project_id'])
-        job.save()
-        return job
-
-    def update(self, instance, validated_data):
-        pass
+class FileSerializer(ExecutionSerializer):
+    file_name = serializers.CharField(max_length=36)
 
     def validate(self, execution_data):
-        project_id = execution_data['project_id']
+        try:
+            valid_job_proj = super().validate(self, execution_data)
+        except serializers.ValidationError as error:
+            raise error
 
-        query_set = Project.objects.all()
-        fetched = query_set.filter(id=project_id)
-        if not fetched:
-            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+        project_id = valid_job_proj['project_id']
+        file_name = valid_job_proj['file_name']
+        file_path = os.path.join('server-data', 'server-projects', str(project_id), str(file_name))
+        if not os.path.isfile(file_path):
+            raise serializers.ValidationError(MISSING_PROJECT_FILES)
 
-        query_set = Job.objects.all()
-        fetched = query_set.filter(project_id=project_id)
-        if not fetched:
-            return execution_data
-        else:
-            self.fetched_job = fetched[0]
-            if self.fetched_job.finish_time is None:
-                raise serializers.ValidationError(JOB_ALREADY_EXECUTING)
-
+        return execution_data
 
 class VisualizationSerializer(ExecutionSerializer):
     def validate(self, execution_data):

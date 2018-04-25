@@ -31,6 +31,7 @@ urlpatterns = [
     url(r'^api/getsettings', views.get_project_settings),
     url(r'^api/file/upload', views.FileUploadView.as_view()),
     url(r'^api/file/visual', views.get_visual),
+    url(r'^api/file/getfile', views.get_file),
     url(r'^api/trajectory', views.fetch_traj)
 ]
 

@@ -1,6 +1,7 @@
 import os
 from WebDNA.messages import *
 
+
 def generate_input_file(project_id, data):
     # will assume sequence.txt exists
     project_path = os.path.join('server-data', 'server-projects', str(project_id))
@@ -45,16 +46,12 @@ def get_input_file_as_serializer_data(project_id):
     return input_dictionary
 
 
-def get_energy_file(project_id):
-    project_path = os.path.join('server-data', 'server-projects', str(project_id))
-    energy_path = os.path.join(project_path, 'energy.dat')
+def get_file_string(project_id, file_name):
+    file_path = os.path.join('server-data', 'server-projects', str(project_id), str(file_name))
 
-    if not os.path.isfile(energy_path):
-        return MISSING_PROJECT_FILES
+    file = open(file=file_path, mode='r')
+    file_string = ''
+    for line in file.readlines():
+        file_string = file_string + line
 
-    energy_file = open(file=energy_path, mode='r')
-    energy_string = ''
-    for line in energy_file.readlines():
-        energy_string = energy_string + line
-
-    return energy_string
+    return file_string
