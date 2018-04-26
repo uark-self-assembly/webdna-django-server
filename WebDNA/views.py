@@ -32,9 +32,12 @@ class FileUploadView(APIView):
     def put(self, request):
         file_obj = request.data['file']
         project_id = request.data['id']
-        file_name = request.data['type']  # 'sequence.txt', 'seq_dep.txt', or 'external_forces.txt'
+        file_name = request.data['type']  # Any kind of file in project to edit
 
         new_file_path = os.path.join('server-data', 'server-projects', project_id, file_name)
+
+        if os.path.isfile(new_file_path):
+            os.remove(new_file_path)
 
         new_file = open(file=new_file_path, mode='wb')
         for line in file_obj.readlines():
@@ -111,9 +114,12 @@ def execute(request):
         path = os.path.join('server-data', 'server-projects', str(project_id))
 
         input_file = os.path.join(path, 'input.txt')
-        if os.path.isdir(path) and os.path.isfile(input_file):
-            execute_sim.delay(job.id, job.project_id, path)
-            return ExecutionResponse.make()
+        generated_dat = os.path.join(path, 'generated.dat')
+        generated_top = os.path.join(path, 'generated.top')
+        if os.path.isdir(path):
+            if os.path.isfile(input_file) and os.path.isfile(generated_dat) and os.path.isfile(generated_top):
+                execute_sim.delay(job.id, job.project_id, path)
+                return ExecutionResponse.make()
         else:
             return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
@@ -157,7 +163,6 @@ def check_status(request):
 def get_visual(request):
     serialized_body = VisualizationSerializer(data=request.data)
     if serialized_body.is_valid():
-        views_path = os.path.dirname(os.path.realpath(__file__))
         project_id = serialized_body.validated_data['project_id']
         project_path = os.path.join('server-data', 'server-projects', str(project_id))
 
@@ -172,16 +177,17 @@ def get_visual(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
+# /api/applysettings
 @api_view(['POST'])
 def set_project_settings(request):
     serialized_body = ProjectSettingsSerializer(data=request.data)
     if serialized_body.is_valid():
-        # will look like the following..
         project_id = serialized_body.validated_data['project_id']
+        box_size = serialized_body.validated_data['box_size']
 
-        # TODO Implement a line that does something like the following
+        generated_files_status = generate_dat_top(project_id, box_size)
         input_file_status = generate_input_file(project_id, serialized_body.validated_data)
-        if input_file_status == MISSING_PROJECT_FILES:
+        if input_file_status == MISSING_PROJECT_FILES or generated_files_status == MISSING_PROJECT_FILES:
             return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
 
         return DefaultResponse.make(status.HTTP_201_CREATED)
@@ -189,13 +195,13 @@ def set_project_settings(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
+# /api/getsettings
 @api_view(['GET'])
 def get_project_settings(request):
     serialized_body = ProjectSettingsSerializer(data=request.data)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
 
-        # TODO Implement a line that does something like the following:
         input_data = get_input_file_as_serializer_data(project_id)
         if input_data == MISSING_PROJECT_FILES:
             return ErrorResponse.make(status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
@@ -205,9 +211,16 @@ def get_project_settings(request):
         return ErrorResponse.make(serialized_body.errors)
 
 
+# /api/file/getfile
 @api_view(['GET'])
-def get_energy(request):
-    pass
+def get_file(request):
+    serialized_body = FileSerializer(data=request.data)
+    if serialized_body.is_valid():
+        project_id = serialized_body.validated_data['project_id']
+        file_name = serialized_body.validated_data['file_name']
+        return get_file_string(project_id, file_name)
+    else:
+        return ErrorResponse.make(serialized_body.errors)
 
 
 # /api/trajectory

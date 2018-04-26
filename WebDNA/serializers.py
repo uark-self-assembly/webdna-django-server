@@ -5,6 +5,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from .messages import *
 import re
 import random
+import os
 
 
 class ExecutionSerializer(serializers.Serializer):
@@ -43,39 +44,22 @@ class ExecutionSerializer(serializers.Serializer):
                 return execution_data
 
 
-class OutputSerializer(serializers.Serializer):
-    class Meta:
-        model = Project
-        fields = 'project_id'
-
-    project_id = serializers.CharField(max_length=36)
-    fetched_job = None
-
-    def create(self, validated_data):
-        job = Job.objects.create(project_id=validated_data['project_id'])
-        job.save()
-        return job
-
-    def update(self, instance, validated_data):
-        pass
+class FileSerializer(ExecutionSerializer):
+    file_name = serializers.CharField(max_length=36)
 
     def validate(self, execution_data):
-        project_id = execution_data['project_id']
+        try:
+            valid_job_proj = super().validate(self, execution_data)
+        except serializers.ValidationError as error:
+            raise error
 
-        query_set = Project.objects.all()
-        fetched = query_set.filter(id=project_id)
-        if not fetched:
-            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+        project_id = valid_job_proj['project_id']
+        file_name = valid_job_proj['file_name']
+        file_path = os.path.join('server-data', 'server-projects', str(project_id), str(file_name))
+        if not os.path.isfile(file_path):
+            raise serializers.ValidationError(MISSING_PROJECT_FILES)
 
-        query_set = Job.objects.all()
-        fetched = query_set.filter(project_id=project_id)
-        if not fetched:
-            return execution_data
-        else:
-            self.fetched_job = fetched[0]
-            if self.fetched_job.finish_time is None:
-                raise serializers.ValidationError(JOB_ALREADY_EXECUTING)
-
+        return execution_data
 
 class VisualizationSerializer(ExecutionSerializer):
     def validate(self, execution_data):
@@ -231,6 +215,28 @@ class ProjectSettingsSerializer(serializers.Serializer):
         if not fetched:
             raise serializers.ValidationError(PROJECT_NOT_FOUND)
 
+        project_path = os.path.join('server-data', 'server-projects', str(project_id))
+
+        # If sequence dependence is to be used, set this to 0 and specify seq_dep_file.
+        use_average_seq = project_settings_data['use_average_seq']
+        seq_dep_file = project_settings_data['seq_dep_file']
+        seq_dep_file_path = os.path.join(project_path, str(seq_dep_file))
+        if (int(use_average_seq) == 0 and not seq_dep_file) or not os.path.isfile(seq_dep_file_path):
+            raise serializers.ValidationError(INPUT_SETTINGS_INVALID)
+
+        # if 1, must set external_forces_file
+        external_forces = project_settings_data['external_forces']
+        external_forces_file = project_settings_data['external_forces_file']
+        external_forces_file_path = os.path.join(project_path, str(external_forces_file))
+        if (int(external_forces) == 1 and not external_forces_file) or not os.path.isfile(external_forces_file_path):
+            raise serializers.ValidationError(INPUT_SETTINGS_INVALID)
+
+        # if print_red_conf_every > 0
+        print_reduced_conf_every = project_settings_data['print_reduced_conf_every']
+        if int(print_reduced_conf_every) > 0:
+            conf_path = os.path.join(os.getcwd(), project_path, 'reduced_conf_output_dir')
+            project_settings_data['reduced_conf_output_dir'] = conf_path
+
         return project_settings_data
 
     project_id = serializers.UUIDField()
@@ -254,7 +260,7 @@ class ProjectSettingsSerializer(serializers.Serializer):
     verlet_skin = serializers.FloatField()
     back_in_box = serializers.IntegerField(default=0, min_value=0, max_value=1)
     salt_concentration = serializers.FloatField(required=False)  # only used with DNA2
-    use_average_seq = serializers.IntegerField(default=1, min_value=0, max_value=1)
+    use_average_seq = serializers.IntegerField(default=1, min_value=0, max_value=1)  # If sequence dependence is to be used, set this to 0 and specify seq_dep_file.
     seq_dep_file = serializers.CharField(max_length=128, required=False)
     external_forces = serializers.IntegerField(default=0, min_value=0, max_value=1)  # if 1, must set external_forces_file
     external_forces_file = serializers.CharField(max_length=128, required=False)

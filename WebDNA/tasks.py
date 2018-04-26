@@ -5,16 +5,19 @@ import subprocess
 from zipfile import ZipFile
 from WebDNA.models import *
 from webdna_server.celery import app
+from WebDNA.messages import *
 
 pdb_file_count = {}
 
 
+@app.task()
 def traj2pdb(path):
     process = subprocess.Popen(["traj2pdb.py", "trajectory.dat", "generated.top", "trajectory.pdb"],
                          cwd=os.path.join(os.getcwd(), path))
     process.wait()
 
 
+@app.task()
 def traj2xtc(path):
     process = subprocess.Popen(["gmx", "trjconv", "-f", "trajectory.pdb", "-o", "trajectory.xtc"],
                                cwd=os.path.join(os.getcwd(), path))
@@ -27,6 +30,19 @@ def zip_traj(project_id, path):
                 with ZipFile(os.path.join(path, str(project_id) + '.zip'), 'w') as archive:
                     archive.write(os.path.join(path, 'trajectory.pdb'), 'trajectory.pdb')
                     archive.write(os.path.join(path, 'trajectory.xtc'), 'trajectory.xtc')
+
+
+@app.task()
+def generate_dat_top(project_id, box_size):
+    path = os.path.join('server-data', 'server-projects', str(project_id))
+    sequence_path = os.path.join(path, "sequence.txt")
+
+    if not os.path.isfile(sequence_path):
+        return MISSING_PROJECT_FILES
+
+    process = subprocess.Popen(["generate-sa.py", str(box_size), "sequence.txt"], cwd=os.path.join(os.getcwd(), path))
+    process.wait()
+    return GENERATED_FILES
 
 
 @app.task()
