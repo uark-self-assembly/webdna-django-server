@@ -8,6 +8,8 @@ from rest_framework import status
 from rest_framework import generics
 from rest_framework.parsers import MultiPartParser
 from WebDNA.util.oxDNA_util import *
+import shutil
+from webdna_server.celery import app
 
 # NOTE: It is best practice to keep all validation (field, class, etc.) in serializers.py
 # A view should ideally call serializer validation and return responses based on the validation result
@@ -96,6 +98,19 @@ class ProjectView(generics.RetrieveUpdateDestroyAPIView):
         return ObjectResponse.make(response=response)
 
     def delete(self, request, *args, **kwargs):
+        project = self.queryset.filter(id=kwargs['id'])
+
+        if not project:
+            return ErrorResponse.make(message=PROJECT_NOT_FOUND)
+
+        path = os.path.join('server-data', 'server-projects', kwargs['id'])
+        jobs = Job.objects.filter(project_id=kwargs['id'])
+
+        for j in jobs:
+            if j.finish_time is None:
+                app.control.revoke(j.process_name, terminate=True)
+        shutil.rmtree(path)
+
         response = generics.RetrieveUpdateDestroyAPIView.delete(self, request, args, kwargs)
         return ObjectResponse.make(response=response)
 

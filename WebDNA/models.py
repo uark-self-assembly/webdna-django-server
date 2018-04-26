@@ -17,6 +17,17 @@ class User(models.Model):
     created_on = models.DateTimeField(editable=False, default=timezone.now)
 
 
+class Script(models.Model):
+    class Meta:
+        db_table = '"webdna"."script"'
+
+    id = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4, editable=False)
+    file_name = models.CharField(max_length=128)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_on = models.DateTimeField(default=timezone.now)
+    description = models.CharField(max_length=280, default=None, null=True)
+
+
 class Project(models.Model):
     class Meta:
         db_table = '"webdna"."project"'
