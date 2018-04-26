@@ -166,3 +166,5 @@ fabric.properties
 \.idea/misc\.xml
 
 \.idea/webdna-django-server\.iml
+
+\.idea/other\.xml

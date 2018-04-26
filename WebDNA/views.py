@@ -235,15 +235,13 @@ def fetch_traj(request):
             trajectory_file = os.path.join(path, 'trajectory.dat')
             topology_file = os.path.join(path, 'generated.top')
             if os.path.isfile(trajectory_file) and os.path.isfile(topology_file):
-                traj2pdb(path)
-                traj2xtc(path)
-                zip_traj(project_id, path)
+                generate_sim_files(path)
             else:
                 return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        with open(os.path.join(path, str(project_id) + '.zip'), 'rb') as archive_file:
+        with open(os.path.join(path, 'sim', 'simulation.zip'), 'rb') as archive_file:
             response = HttpResponse(archive_file, content_type='application/zip')
-            response['Content-Disposition'] = 'attachment; filename="'+str(project_id)+'.zip"'
+            response['Content-Disposition'] = 'attachment; filename="simulation.zip"'
             archive_file.close()
         return response
 
