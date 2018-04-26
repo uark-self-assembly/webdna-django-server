@@ -215,6 +215,28 @@ class ProjectSettingsSerializer(serializers.Serializer):
         if not fetched:
             raise serializers.ValidationError(PROJECT_NOT_FOUND)
 
+        project_path = os.path.join('server-data', 'server-projects', str(project_id))
+
+        # If sequence dependence is to be used, set this to 0 and specify seq_dep_file.
+        use_average_seq = project_settings_data['use_average_seq']
+        seq_dep_file = project_settings_data['seq_dep_file']
+        seq_dep_file_path = os.path.join(project_path, str(seq_dep_file))
+        if (int(use_average_seq) == 0 and not seq_dep_file) or not os.path.isfile(seq_dep_file_path):
+            raise serializers.ValidationError(INPUT_SETTINGS_INVALID)
+
+        # if 1, must set external_forces_file
+        external_forces = project_settings_data['external_forces']
+        external_forces_file = project_settings_data['external_forces_file']
+        external_forces_file_path = os.path.join(project_path, str(external_forces_file))
+        if (int(external_forces) == 1 and not external_forces_file) or not os.path.isfile(external_forces_file_path):
+            raise serializers.ValidationError(INPUT_SETTINGS_INVALID)
+
+        # if print_red_conf_every > 0
+        print_reduced_conf_every = project_settings_data['print_reduced_conf_every']
+        if int(print_reduced_conf_every) > 0:
+            conf_path = os.path.join(os.getcwd(), project_path, 'reduced_conf_output_dir')
+            project_settings_data['reduced_conf_output_dir'] = conf_path
+
         return project_settings_data
 
     project_id = serializers.UUIDField()
@@ -238,7 +260,7 @@ class ProjectSettingsSerializer(serializers.Serializer):
     verlet_skin = serializers.FloatField()
     back_in_box = serializers.IntegerField(default=0, min_value=0, max_value=1)
     salt_concentration = serializers.FloatField(required=False)  # only used with DNA2
-    use_average_seq = serializers.IntegerField(default=1, min_value=0, max_value=1)
+    use_average_seq = serializers.IntegerField(default=1, min_value=0, max_value=1)  # If sequence dependence is to be used, set this to 0 and specify seq_dep_file.
     seq_dep_file = serializers.CharField(max_length=128, required=False)
     external_forces = serializers.IntegerField(default=0, min_value=0, max_value=1)  # if 1, must set external_forces_file
     external_forces_file = serializers.CharField(max_length=128, required=False)
