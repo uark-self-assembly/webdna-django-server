@@ -44,6 +44,41 @@ class ExecutionSerializer(serializers.Serializer):
                 return execution_data
 
 
+class ScriptUploadSerializer(serializers.Serializer):
+    class Meta:
+        model = Script
+        fields = ('file_name', 'user')
+
+        file_name = serializers.CharField(max_length=128)
+        user = serializers.CharField(max_length=36)
+        file_obj = serializers.FileField()
+
+        def create(self, validated_data):
+            script = Script.objects.create(file_name=validated_data['file_name'], user=validated_data['user'])
+            script.save()
+            return script
+
+        def update(self, instance, validated_data):
+            pass
+
+        def validate(self, script_data):
+            file_name = script_data['file_name']
+            user = script_data['user']
+            file_obj = script_data['file']
+
+            # make sure it doesn't already exist
+            query_set = Script.objects.all()
+            fetched = query_set.filter(file_name=file_name, user=user)
+            if fetched:
+                raise serializers.ValidationError(SCRIPTS_ALREADY_EXISTS)
+
+            # make the directory
+            path = os.path.join(os.getcwd(), 'server-data', 'server-users', str(user), 'scripts')
+            if not os.path.isdir(path):
+                os.makedirs(path)
+
+            return script_data
+
 class FileSerializer(ExecutionSerializer):
     file_name = serializers.CharField(max_length=128)
 

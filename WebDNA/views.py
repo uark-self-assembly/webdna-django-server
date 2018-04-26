@@ -55,21 +55,26 @@ class ScriptUploadView(APIView):
 
     # update to add script file to Script table
     def put(self, request):
-        file_obj = request.data['file']
-        user_id = request.data['user_id']
-        script_name = request.data['script_name']
+        serialized_body = ScriptUploadSerializer(data=request.data)
+        if serialized_body.is_valid():
+            file_obj = serialized_body.validated_data['file']
+            user_id = serialized_body.validated_data['user']
+            script_name = serialized_body.validated_data['file_name']
 
-        new_script_path = os.path.join('server-data', 'server-users', str(user_id), 'scripts', str(script_name))
+            new_script_path = os.path.join('server-data', 'server-users', str(user_id), 'scripts', str(script_name))
 
-        if os.path.isfile(new_script_path):
-            os.remove(new_script_path)
+            if os.path.isfile(new_script_path):
+                os.remove(new_script_path)
 
-        new_script = open(file=new_script_path, mode='wb')
-        for line in file_obj.readlines():
-            new_script.write(line)
-        new_script.close()
+            new_script = open(file=new_script_path, mode='wb')
+            for line in file_obj.readlines():
+                new_script.write(line)
+            new_script.close()
 
-        return ErrorResponse.make(status=status.HTTP_204_NO_CONTENT)
+            serialized_body.create(serialized_body.validated_data)
+            return ErrorResponse.make(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return ErrorResponse.make(errors=serialized_body.errors)
 
 
 class ProjectList(generics.CreateAPIView, generics.ListAPIView):
