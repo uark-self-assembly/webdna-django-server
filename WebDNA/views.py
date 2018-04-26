@@ -232,14 +232,15 @@ def get_project_settings(request):
         return ErrorResponse.make(serialized_body.errors)
 
 
-# /api/file/getfile
+# /api/file/getprojectfile
 @api_view(['GET'])
-def get_file(request):
+def get_project_file(request):
     serialized_body = FileSerializer(data=request.data)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
         file_name = serialized_body.validated_data['file_name']
-        return get_file_string(project_id, file_name)
+        file_path = os.path.join('server-data', 'server-projects', str(project_id), str(file_name))
+        return get_file_string(file_path)
     else:
         return ErrorResponse.make(serialized_body.errors)
 
@@ -268,5 +269,67 @@ def fetch_traj(request):
             archive_file.close()
         return response
 
+    else:
+        return ErrorResponse.make(errors=serialized_body.errors)
+
+
+# /api/script/getscriptlist
+@api_view(['GET'])
+def get_script_list(request):
+    path = os.path.join(os.getcwd(), 'oxDNA', 'UTILS')
+    dir_list = os.listdir(path)
+    for item in list(dir_list):
+        if item[-3:] != '.py':
+            dir_list.remove(item)
+
+    response_data = {'scripts': dir_list}
+    return ObjectResponse.make(obj=response_data)
+
+
+# /api/script/getcustomlist
+@api_view(['GET'])
+def get_custom_script_list(request):
+    serialized_body = UserScriptSerializer(data=request.data)
+    if serialized_body.is_valid():
+        user_id = serialized_body.validated_data['user_id']
+        path = os.path(os.getcwd(), 'server-data', 'server-users', str(user_id), 'scripts')
+        dir_list = os.listdir(path)
+
+        response_data = {'custom_scripts': dir_list}
+        return ObjectResponse.make(obj=response_data)
+    else:
+        return ErrorResponse.make(errors=serialized_body.errors)
+
+
+# /api/script/getinputlist
+@api_view(['GET'])
+def get_input_list(request):
+    serialized_body = ProjectExistenceSerializer(data=request.data)
+    if serialized_body.is_valid():
+        project_id = serialized_body.validated_data['project_id']
+        path = os.path(os.getcwd(), 'server-data', 'server-projects', str(project_id))
+        dir_list = []
+        for (dir_path, dir_names, file_names) in os.walk(path):
+            if 'analysis' in dir_path:  # analysis output files folder
+                continue
+            dir_list.extend(file_names)
+
+        response_data = {'inputs': dir_list}
+        return ObjectResponse.make(obj=response_data)
+    else:
+        return ErrorResponse.make(errors=serialized_body.errors)
+
+
+# /api/script/getoutputlist
+@api_view(['GET'])
+def get_output_list(request):
+    serialized_body = ProjectExistenceSerializer(data=request.data)
+    if serialized_body.is_valid():
+        project_id = serialized_body.validated_data['project_id']
+        path = os.path(os.getcwd(), 'server-data', 'server-projects', str(project_id), 'analysis')
+        dir_list = os.listdir(path)
+
+        response_data = {'outputs': dir_list}
+        return ObjectResponse.make(obj=response_data)
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
