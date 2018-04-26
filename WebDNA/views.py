@@ -275,6 +275,26 @@ def fetch_traj(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
+# /api/file/download
+@api_view(['GET'])
+def download_project_file(request, path):
+    # assumes path is a path in "server-data/server-projects/{project_id}"
+    serialized_body = ProjectExistenceSerializer(data=request.data)
+    if serialized_body.is_valid():
+        project_id = serialized_body.validated_data['project_id']
+        file_path = os.path.join('server-data', 'server-projects', str(project_id), path)
+        if os.path.isfile(file_path):
+            with open(file_path, 'rb') as file:
+                response = HttpResponse(file.read(), content_type="application/file")
+                response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(file_path)
+                file.close()
+            return response
+        else:
+            return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
+    else:
+        return ErrorResponse.make(errors=serialized_body.errors)
+
+
 # /api/script/getscriptlist
 @api_view(['GET'])
 def get_script_list(request):

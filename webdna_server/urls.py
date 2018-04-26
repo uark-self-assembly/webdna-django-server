@@ -30,6 +30,7 @@ urlpatterns = [
     url(r'^api/applysettings', views.set_project_settings),
     url(r'^api/getsettings', views.get_project_settings),
     url(r'^api/file/upload', views.FileUploadView.as_view()),
+    url(r'^api/file/download', views.download_project_file),
     url(r'^api/file/visual', views.get_visual),
     url(r'^api/file/getprojectfile', views.get_project_file),
     url(r'^api/trajectory', views.fetch_traj),
@@ -37,7 +38,8 @@ urlpatterns = [
     url(r'^api/script/getscriptlist', views.get_script_list),
     url(r'^api/script/getcustomlist', views.get_custom_script_list),
     url(r'^api/script/getinputlist', views.get_input_list),
-    url(r'^api/script/getoutputlist', views.get_output_list)
+    url(r'^api/script/getoutputlist', views.get_output_list),
+
 ]
 
 url_patterns = format_suffix_patterns(urlpatterns)
