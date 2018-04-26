@@ -34,7 +34,7 @@ class FileUploadView(APIView):
         project_id = request.data['id']
         file_name = request.data['type']  # Any kind of file in project to edit
 
-        new_file_path = os.path.join('server-data', 'server-projects', project_id, file_name)
+        new_file_path = os.path.join('server-data', 'server-projects', str(project_id), str(file_name))
 
         if os.path.isfile(new_file_path):
             os.remove(new_file_path)
@@ -42,8 +42,29 @@ class FileUploadView(APIView):
         new_file = open(file=new_file_path, mode='wb')
         for line in file_obj.readlines():
             new_file.write(line)
-
         new_file.close()
+
+        return ErrorResponse.make(status=status.HTTP_204_NO_CONTENT)
+
+# api/script/upload
+class ScriptUploadView(APIView):
+    parser_classes = (MultiPartParser,)
+
+    def put(self, request):
+        file_obj = request.data['file']
+        user_id = request.data['user_id']
+        script_name = request.data['script_name']
+
+        new_script_path = os.path.join('server-data', 'server-users', str(user_id), 'scripts', str(script_name))
+
+        if os.path.isfile(new_script_path):
+            os.remove(new_script_path)
+
+        new_script = open(file=new_script_path, mode='wb')
+        for line in file_obj.readlines():
+            new_script.write(line)
+        new_script.close()
+
         return ErrorResponse.make(status=status.HTTP_204_NO_CONTENT)
 
 
