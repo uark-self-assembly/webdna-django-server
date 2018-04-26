@@ -39,6 +39,42 @@ class ExecutionSerializer(serializers.Serializer):
             self.fetched_job = fetched[0]
             if self.fetched_job.finish_time is None:
                 raise serializers.ValidationError(JOB_ALREADY_EXECUTING)
+            else:
+                return execution_data
+
+
+class OutputSerializer(serializers.Serializer):
+    class Meta:
+        model = Project
+        fields = 'project_id'
+
+    project_id = serializers.CharField(max_length=36)
+    fetched_job = None
+
+    def create(self, validated_data):
+        job = Job.objects.create(project_id=validated_data['project_id'])
+        job.save()
+        return job
+
+    def update(self, instance, validated_data):
+        pass
+
+    def validate(self, execution_data):
+        project_id = execution_data['project_id']
+
+        query_set = Project.objects.all()
+        fetched = query_set.filter(id=project_id)
+        if not fetched:
+            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+
+        query_set = Job.objects.all()
+        fetched = query_set.filter(project_id=project_id)
+        if not fetched:
+            return execution_data
+        else:
+            self.fetched_job = fetched[0]
+            if self.fetched_job.finish_time is None:
+                raise serializers.ValidationError(JOB_ALREADY_EXECUTING)
 
 
 class VisualizationSerializer(ExecutionSerializer):
@@ -200,7 +236,7 @@ class ProjectSettingsSerializer(serializers.Serializer):
     project_id = serializers.UUIDField()
 
     # Generation options
-    box_size = serializers.IntegerField(min_value=1, default=20)# box side
+    box_size = serializers.IntegerField(min_value=1, default=20)  # box side
 
     # Generic Options
     interaction_type = serializers.CharField(max_length=10, default='DNA')
@@ -220,7 +256,7 @@ class ProjectSettingsSerializer(serializers.Serializer):
     salt_concentration = serializers.FloatField(required=False)  # only used with DNA2
     use_average_seq = serializers.IntegerField(default=1, min_value=0, max_value=1)
     seq_dep_file = serializers.CharField(max_length=128, required=False)
-    external_forces = serializers.IntegerField(default=0, min_value=0, max_value=1) # if 1, must set external_forces_file
+    external_forces = serializers.IntegerField(default=0, min_value=0, max_value=1)  # if 1, must set external_forces_file
     external_forces_file = serializers.CharField(max_length=128, required=False)
 
     # Molecular Dynamics Simulations Options
@@ -236,7 +272,7 @@ class ProjectSettingsSerializer(serializers.Serializer):
     conf_file = serializers.CharField(max_length=128, required=False, default='generated.dat')
     topology = serializers.CharField(max_length=128, default='generated.top')
     trajectory_file = serializers.CharField(default='trajectory.dat', max_length=128)
-    confs_to_skip = serializers.IntegerField(default=0) # only used if conf_file is a trajectory
+    confs_to_skip = serializers.IntegerField(default=0)  # only used if conf_file is a trajectory
     lastconf_file = serializers.CharField(max_length=128, default='last_conf.dat')
     lastconf_file_bin = serializers.CharField(max_length=0, required=False)
     binary_initial_conf = serializers.IntegerField(default=0, min_value=0, max_value=1)
@@ -245,13 +281,40 @@ class ProjectSettingsSerializer(serializers.Serializer):
     print_energy_every = serializers.IntegerField(default=1000)
     no_stdout_energy = serializers.IntegerField(default=0, min_value=0, max_value=1)
     time_scale = serializers.CharField(default='linear', max_length=128)
-    print_conf_ppc = serializers.IntegerField(required=False) # manditory only if time_scale==log_line
+    print_conf_ppc = serializers.IntegerField(required=False)  # mandatory only if time_scale==log_line
     print_conf_interval = serializers.IntegerField(required=False)
     print_reduced_conf_every = serializers.IntegerField(default=0, min_value=0)
-    reduced_conf_output_dir = serializers.CharField(max_length=128, required=False) # if print_red_conf_every > 0
+    reduced_conf_output_dir = serializers.CharField(max_length=128, required=False)  # if print_red_conf_every > 0
     log_file = serializers.CharField(default='log.dat', max_length=128)
     print_timings = serializers.IntegerField(default=0, min_value=0, max_value=1)
     timings_filename = serializers.CharField(max_length=128, required=False)
     output_prefix = serializers.CharField(default='', max_length=128)
     print_input = serializers.IntegerField(default=0, min_value=0, max_value=1)
     equilibration_steps = serializers.IntegerField(default=0, min_value=0)
+
+
+class GetPDBSerializer(serializers.Serializer):
+    class Meta:
+        model = Job
+        fields = 'project_id'
+
+    project_id = serializers.UUIDField()
+    fetched_job = None
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        pass
+
+    def validate(self, data):
+        project_id = data['project_id']
+        query_set = Job.objects.all()
+        fetched = query_set.filter(project_id=project_id)
+
+        if not fetched:
+            raise(serializers.ValidationError(JOB_NOT_FOUND))
+
+        self.fetched_job = fetched[0]
+
+        return data
