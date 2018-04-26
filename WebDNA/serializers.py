@@ -44,8 +44,43 @@ class ExecutionSerializer(serializers.Serializer):
                 return execution_data
 
 
+class ScriptUploadSerializer(serializers.Serializer):
+    class Meta:
+        model = Script
+        fields = ('file_name', 'user')
+
+        file_name = serializers.CharField(max_length=128)
+        user = serializers.CharField(max_length=36)
+        file_obj = serializers.FileField()
+
+        def create(self, validated_data):
+            script = Script.objects.create(file_name=validated_data['file_name'], user=validated_data['user'])
+            script.save()
+            return script
+
+        def update(self, instance, validated_data):
+            pass
+
+        def validate(self, script_data):
+            file_name = script_data['file_name']
+            user = script_data['user']
+            file_obj = script_data['file']
+
+            # make sure it doesn't already exist
+            query_set = Script.objects.all()
+            fetched = query_set.filter(file_name=file_name, user=user)
+            if fetched:
+                raise serializers.ValidationError(SCRIPTS_ALREADY_EXISTS)
+
+            # make the directory
+            path = os.path.join(os.getcwd(), 'server-data', 'server-users', str(user), 'scripts')
+            if not os.path.isdir(path):
+                os.makedirs(path)
+
+            return script_data
+
 class FileSerializer(ExecutionSerializer):
-    file_name = serializers.CharField(max_length=36)
+    file_name = serializers.CharField(max_length=128)
 
     def validate(self, execution_data):
         try:
@@ -60,6 +95,7 @@ class FileSerializer(ExecutionSerializer):
             raise serializers.ValidationError(MISSING_PROJECT_FILES)
 
         return execution_data
+
 
 class VisualizationSerializer(ExecutionSerializer):
     def validate(self, execution_data):
@@ -124,6 +160,48 @@ class LoginSerializer(serializers.Serializer):
         self.fetched_user = user_object
 
         return login_data
+
+
+class UserScriptSerializer(serializers.Serializer):
+    class Meta:
+        model = User
+        fields = 'id'
+
+    user_id = serializers.CharField(max_length=36)
+
+    def validate(self, user_data):
+        user_id = user_data['user_id']
+
+        query_set = User.objects.all()
+        fetched = query_set.filter(id=user_id)
+
+        if not fetched:
+            raise serializers.ValidationError(USER_NOT_FOUND)
+
+        path = os.path.join('server-data', 'server-users', str(user_id), 'scripts')
+        if not os.path.isdir(path):
+            raise serializers.ValidationError(SCRIPTS_NOT_FOUND)
+
+        return user_data
+
+
+class ProjectExistenceSerializer(serializers.Serializer):
+    class Meta:
+        model = Project
+        fields = 'id'
+
+    project_id = serializers.CharField(max_length=36)
+
+    def validate(self, project_data):
+        project_id = project_data['project_id']
+
+        query_set = Project.objects.all()
+        fetched = query_set.filter(id=project_id)
+
+        if not fetched:
+            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+
+        return project_data
 
 
 class RegistrationSerializer(serializers.Serializer):

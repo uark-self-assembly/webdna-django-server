@@ -46,9 +46,7 @@ def get_input_file_as_serializer_data(project_id):
     return input_dictionary
 
 
-def get_file_string(project_id, file_name):
-    file_path = os.path.join('server-data', 'server-projects', str(project_id), str(file_name))
-
+def get_file_string(file_path):
     file = open(file=file_path, mode='r')
     file_string = ''
     for line in file.readlines():
