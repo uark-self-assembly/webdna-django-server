@@ -34,13 +34,13 @@ urlpatterns = [
     url(r'^api/file/visual', views.get_visual),
     url(r'^api/file/getprojectfile', views.get_project_file),
     url(r'^api/trajectory', views.fetch_traj),
-    url(r'^api/script/upload', views.ScriptUploadView.as_view()),
-    url(r'^api/script/getscriptlist', views.get_script_list),
-    url(r'^api/script/getcustomlist', views.get_custom_script_list),
-    url(r'^api/script/getinputlist', views.get_input_list),
-    url(r'^api/script/getoutputlist', views.get_output_list),
-    url(r'^api/useroutput', views.get_user_output),
-    url(r'^api/userlog', views.get_user_log),
+    url(r'^api/scripts/upload', views.ScriptUploadView.as_view()),
+    url(r'^api/scripts/getscriptlist', views.get_script_list),
+    url(r'^api/scripts/getcustomlist', views.get_custom_script_list),
+    url(r'^api/scripts/getinputlist', views.get_input_list),
+    url(r'^api/scripts/getoutputlist', views.get_output_list),
+    url(r'^api/scripts/useroutput', views.get_user_output),
+    url(r'^api/scripts/userlog', views.get_user_log),
 ]
 
 url_patterns = format_suffix_patterns(urlpatterns)
