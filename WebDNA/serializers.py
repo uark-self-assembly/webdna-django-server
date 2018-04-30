@@ -8,6 +8,29 @@ import random
 import os
 
 
+class UserOutputRequestSerializer(serializers.Serializer):
+    class Meta:
+        model = Project
+        fields = 'id'
+
+    id = serializers.CharField(max_length=36)
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
+
+    def validate(self, data):
+        project_id = data['id']
+        query_set = Project.objects.all()
+        fetched = query_set.filter(id=project_id)
+        if not fetched:
+            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+
+        return data
+
+
 class ExecutionSerializer(serializers.Serializer):
     class Meta:
         model = Job
@@ -44,17 +67,48 @@ class ExecutionSerializer(serializers.Serializer):
                 return execution_data
 
 
+class TerminateSerializer(serializers.Serializer):
+        class Meta:
+            model = Job
+            fields = 'project_id'
+
+        project_id = serializers.CharField(max_length=36)
+        fetched_job = None
+
+        def create(self, validated_data):
+            pass
+
+        def update(self, instance, validated_data):
+            pass
+
+        def validate(self, execution_data):
+            project_id = execution_data['project_id']
+
+            query_set = Job.objects.all()
+            fetched = query_set.filter(project_id=project_id)
+            if not fetched:
+                raise serializers.ValidationError(JOB_NOT_FOUND)
+            else:
+                self.fetched_job = fetched[0]
+                if self.fetched_job.finish_time is not None:
+                    raise serializers.ValidationError(JOB_NOT_EXECUTING)
+                else:
+                    return execution_data
+
+
 class ScriptUploadSerializer(serializers.Serializer):
     class Meta:
         model = Script
-        fields = ('file_name', 'user')
+        fields = ('file_name', 'user', 'description')
 
         file_name = serializers.CharField(max_length=128)
         user = serializers.CharField(max_length=36)
         file_obj = serializers.FileField()
+        description = serializers.CharField(max_length=512)
 
         def create(self, validated_data):
-            script = Script.objects.create(file_name=validated_data['file_name'], user=validated_data['user'])
+            script = Script.objects.create(file_name=validated_data['file_name'], user=validated_data['user'],
+                                           description=validated_data['description'])
             script.save()
             return script
 
@@ -65,6 +119,7 @@ class ScriptUploadSerializer(serializers.Serializer):
             file_name = script_data['file_name']
             user = script_data['user']
             file_obj = script_data['file']
+            description = script_data['description']
 
             # make sure it doesn't already exist
             query_set = Script.objects.all()
@@ -119,6 +174,12 @@ class UserSerializer(serializers.ModelSerializer):
 class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
+        fields = '__all__'
+
+
+class ScriptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Script
         fields = '__all__'
 
 
@@ -404,3 +465,66 @@ class GetPDBSerializer(serializers.Serializer):
         self.fetched_job = fetched[0]
 
         return data
+
+
+class ScriptChainSerializer(serializers.Serializer):
+    class Meta:
+        model = Project
+        fields = 'id'
+
+    project_id = serializers.UUIDField()
+    script_list = serializers.CharField(max_length=1024, required=True)
+    fetched_project = None
+
+    def validate(self, data):
+        project_id = data['project_id']
+
+        query_set = Project.objects.all()
+        fetched = query_set.filter(id=project_id)
+        if not fetched:
+            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+
+        return data
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
+
+
+class RunAnalysisSerializer(serializers.Serializer):
+    class Meta:
+        model = Project
+        fields = 'id'
+
+    project_id = serializers.UUIDField()
+    fetched_project = None
+
+    def validate(self, data):
+        project_id = data['project_id']
+
+        query_set = Project.objects.all()
+        fetched = query_set.filter(id=project_id)
+        if not fetched:
+            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+
+        self.fetched_project = fetched[0]
+
+        query_set = Job.objects.all()
+        fetched = query_set.filter(project_id=project_id)
+
+        if not fetched:
+            raise serializers.ValidationError(JOB_NOT_FOUND)
+
+        job = fetched[0]
+        if job.finish_time is None:
+            raise serializers.ValidationError(JOB_CURRENTLY_EXECUTING)
+
+        return data
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
