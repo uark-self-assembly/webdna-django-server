@@ -39,7 +39,7 @@ urlpatterns = [
     url(r'^api/script/getcustomlist', views.get_custom_script_list),
     url(r'^api/script/getinputlist', views.get_input_list),
     url(r'^api/script/getoutputlist', views.get_output_list),
-
+    url(r'^api/useroutput', views.get_user_output),
 ]
 
 url_patterns = format_suffix_patterns(urlpatterns)

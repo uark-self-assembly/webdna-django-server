@@ -8,6 +8,29 @@ import random
 import os
 
 
+class UserOutputRequestSerializer(serializers.Serializer):
+    class Meta:
+        model = Project
+        fields = 'id'
+
+    id = serializers.CharField(max_length=36)
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
+
+    def validate(self, data):
+        project_id = data['id']
+        query_set = Project.objects.all()
+        fetched = query_set.filter(id=project_id)
+        if not fetched:
+            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+
+        return data
+
+
 class ExecutionSerializer(serializers.Serializer):
     class Meta:
         model = Job

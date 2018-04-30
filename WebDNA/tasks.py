@@ -74,6 +74,7 @@ def execute_sim(job_id, project_id, user_id, path):
         os.remove(os.path.join(path, "trajectory.xtc"))
         os.remove(os.path.join(path, "trajectory.pdb"))
         os.remove(os.path.join(path, project_id + ".zip"))
+        os.remove(os.path.join(path, 'analysis', 'output.txt'))
     except OSError:
         pass
 
