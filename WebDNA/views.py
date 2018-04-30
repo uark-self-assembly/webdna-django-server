@@ -211,22 +211,22 @@ def check_status(request):
 
 
 # /api/file/visual
-@api_view(['GET'])
-def get_visual(request):
-    serialized_body = VisualizationSerializer(data=request.data)
-    if serialized_body.is_valid():
-        project_id = serialized_body.validated_data['project_id']
-        project_path = os.path.join('server-data', 'server-projects', str(project_id))
-
-        trajectory_file = os.path.join(project_path, 'trajectory.dat')
-        if os.path.isfile(trajectory_file):
-            file_string = get_pdb_file.delay(project_id)
-            response_data = {'file_string': file_string, 'project_id': project_id}
-            return ObjectResponse.make(obj=response_data)
-        else:
-            return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
-    else:
-        return ErrorResponse.make(errors=serialized_body.errors)
+# @api_view(['GET'])
+# def get_visual(request):
+#     serialized_body = VisualizationSerializer(data=request.data)
+#     if serialized_body.is_valid():
+#         project_id = serialized_body.validated_data['project_id']
+#         project_path = os.path.join('server-data', 'server-projects', str(project_id))
+#
+#         trajectory_file = os.path.join(project_path, 'trajectory.dat')
+#         if os.path.isfile(trajectory_file):
+#             file_string = get_pdb_file.delay(project_id)
+#             response_data = {'file_string': file_string, 'project_id': project_id}
+#             return ObjectResponse.make(obj=response_data)
+#         else:
+#             return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
+#     else:
+#         return ErrorResponse.make(errors=serialized_body.errors)
 
 
 # /api/applysettings
@@ -443,3 +443,14 @@ def get_user_log(request):
                                       message='analysis.log does not exist for given project')
     else:
         return ErrorResponse.make(status=status.HTTP_400_BAD_REQUEST, message=PROJECT_NOT_FOUND)
+
+
+@api_view(['POST'])
+def stop_execution(request):
+    serialized_body = TerminateSerializer(data=request.data)
+    if serialized_body.is_valid():
+        job = serialized_body.fetched_job
+        app.control.revoke(job.process_name, terminate=True)
+        return DefaultResponse.make()
+    else:
+        return ErrorResponse.make(errors=serialized_body.errors)

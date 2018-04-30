@@ -67,6 +67,35 @@ class ExecutionSerializer(serializers.Serializer):
                 return execution_data
 
 
+class TerminateSerializer(serializers.Serializer):
+        class Meta:
+            model = Job
+            fields = 'project_id'
+
+        project_id = serializers.CharField(max_length=36)
+        fetched_job = None
+
+        def create(self, validated_data):
+            pass
+
+        def update(self, instance, validated_data):
+            pass
+
+        def validate(self, execution_data):
+            project_id = execution_data['project_id']
+
+            query_set = Job.objects.all()
+            fetched = query_set.filter(project_id=project_id)
+            if not fetched:
+                raise serializers.ValidationError(JOB_NOT_FOUND)
+            else:
+                self.fetched_job = fetched[0]
+                if self.fetched_job.finish_time is not None:
+                    raise serializers.ValidationError(JOB_NOT_EXECUTING)
+                else:
+                    return execution_data
+
+
 class ScriptUploadSerializer(serializers.Serializer):
     class Meta:
         model = Script

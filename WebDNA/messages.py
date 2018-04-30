@@ -10,6 +10,7 @@ INVALID_PASSWORD_FORMAT = 'Password must be at least 8 characters,' \
 PROJECT_NOT_FOUND = 'No project exists with the provided id'
 JOB_ALREADY_EXECUTING = 'Requested execution already running on server'
 JOB_NOT_FOUND = 'No job exists with the provided project id'
+JOB_NOT_EXECUTING = 'The specified job is not executing'
 MISSING_PROJECT_FILES = 'Necessary project files are missing'
 INPUT_GENERATED = 'input.txt was successfully generated'
 GENERATED_FILES = 'generated.top and generated.dat were successfully generated'
