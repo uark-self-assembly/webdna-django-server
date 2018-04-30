@@ -7,29 +7,45 @@ from WebDNA.models import *
 from webdna_server.celery import app
 from WebDNA.messages import *
 
-pdb_file_count = {}
-
 
 @app.task()
 def traj2pdb(path):
     process = subprocess.Popen(["traj2pdb.py", "trajectory.dat", "generated.top", "trajectory.pdb"],
-                         cwd=os.path.join(os.getcwd(), path))
-    process.wait()
-
-
-@app.task()
-def traj2xtc(path):
-    process = subprocess.Popen(["gmx", "trjconv", "-f", "trajectory.pdb", "-o", "trajectory.xtc"],
                                cwd=os.path.join(os.getcwd(), path))
     process.wait()
 
 
-def zip_traj(project_id, path):
-        if os.path.exists(os.path.join(path, 'trajectory.pdb')):
-            if os.path.exists(os.path.join(path, 'trajectory.xtc')):
-                with ZipFile(os.path.join(path, str(project_id) + '.zip'), 'w') as archive:
-                    archive.write(os.path.join(path, 'trajectory.pdb'), 'trajectory.pdb')
-                    archive.write(os.path.join(path, 'trajectory.xtc'), 'trajectory.xtc')
+@app.task()
+def traj2xtc(path, input_path='trajectory.pdb', output_path='sim/trajectory.xtc'):
+    print('gmx trjconv -f {} -o {}'.format(input_path, output_path))
+    process = subprocess.Popen(["gmx", "trjconv", "-f", input_path, "-o", output_path],
+                               cwd=os.path.join(os.getcwd(), path))
+    process.wait()
+
+
+def pdb2first_frame(path, input_file='trajectory.pdb', output_file='trajectory_0.pdb'):
+    input_path = os.path.join(path, input_file)
+    output_path = os.path.join(path, output_file)
+
+    outfile = open(output_path, 'w')
+
+    with open(input_path) as infile:
+        for line in infile:
+            if 'ENDMDL' not in line:
+                outfile.write(line)
+            else:
+                outfile.write('ENDMDL')
+                break
+
+    outfile.close()
+
+
+def zip_simulation(path):
+    if os.path.exists(os.path.join(path, 'trajectory.pdb')):
+        if os.path.exists(os.path.join(path, 'trajectory.xtc')):
+            with ZipFile(os.path.join(path, 'simulation.zip'), 'w') as archive:
+                archive.write(os.path.join(path, 'trajectory.pdb'), 'trajectory.pdb')
+                archive.write(os.path.join(path, 'trajectory.xtc'), 'trajectory.xtc')
 
 
 @app.task()
@@ -67,32 +83,34 @@ def execute_sim(job_id, project_id, path):
     process.wait()
     log.close()
 
+    print("Simulation completed, generating pdb file for project: " + project_id)
+
+    generate_sim_files(path)
+
     job = Job(id=job_id, finish_time=timezone.now(), process_name=None)
     job.save(update_fields=['process_name', 'finish_time'])
 
-    print("Simulation completed, generating pdb file for project: " + project_id)
+
+def generate_sim_files(path):
     traj2pdb(path)
 
+    sim_output_path = os.path.join(path, 'sim')
 
-@app.task()
-def get_pdb_file(project_id):
-    tasks_path = os.path.dirname(os.path.realpath(__file__))
-    project_path = tasks_path + r'/../server-data/server-projects/' + project_id
-    pdb_script_path = project_path + r'/../../../oxDNA/UTILS/traj2pdb.py'
-    # python_script = 'python ' + PDB_script_path ## even needed? use python3?
-    process = subprocess.Popen([pdb_script_path, 'trajectory.dat', 'generated.top'], cwd=project_path)
+    try:
+        os.makedirs(sim_output_path)
+    except FileExistsError:
+        pass
 
-    if project_id in pdb_file_count:
-        pdb_file_count[project_id] = pdb_file_count[project_id] + 1
-    else:
-        pdb_file_count[project_id] = 0
+    pdb_file_path = os.path.join(sim_output_path, 'trajectory.pdb')
+    xtc_file_path = os.path.join(sim_output_path, 'trajectory.xtc')
 
-    process.wait()  # makes it blocking?
-    os.rename(project_path + r'/trajectory.dat.pdb', project_path + r'/' + pdb_file_count[project_id]
-              + r'trajectory.pdb')
+    try:
+        os.remove(pdb_file_path)
+        os.remove(xtc_file_path)
+    except OSError:
+        pass
 
-    trajectory_string = ''
-    trajectory_file = open(file=project_path + r'/' + pdb_file_count[project_id] + r'trajectory.pdb', mode='r')
-    for line in trajectory_file.readlines():
-        trajectory_string = trajectory_string + line  # includes newline character
-    return trajectory_string
+    traj2xtc(path, input_path='trajectory.pdb', output_path=os.path.join('sim', 'trajectory.xtc'))
+    pdb2first_frame(path, input_file='trajectory.pdb', output_file=os.path.join('sim', 'trajectory.pdb'))
+
+    zip_simulation(sim_output_path)
