@@ -371,6 +371,7 @@ def get_input_list(request):
         dir_list = []
         for (dir_path, dir_names, file_names) in os.walk(path):
             if 'analysis' in dir_path:  # analysis output files folder
+                dir_list.extend(file_names)
                 continue
             # path_from_analysis = "../{path_in_project_id}" or simply ".."
             path_from_analysis = dir_path.replace(path, '')
