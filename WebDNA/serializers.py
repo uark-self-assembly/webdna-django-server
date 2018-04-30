@@ -8,6 +8,29 @@ import random
 import os
 
 
+class UserOutputRequestSerializer(serializers.Serializer):
+    class Meta:
+        model = Project
+        fields = 'id'
+
+    id = serializers.CharField(max_length=36)
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
+
+    def validate(self, data):
+        project_id = data['id']
+        query_set = Project.objects.all()
+        fetched = query_set.filter(id=project_id)
+        if not fetched:
+            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+
+        return data
+
+
 class ExecutionSerializer(serializers.Serializer):
     class Meta:
         model = Job
@@ -297,17 +320,19 @@ class ProjectSettingsSerializer(serializers.Serializer):
 
         # If sequence dependence is to be used, set this to 0 and specify seq_dep_file.
         use_average_seq = project_settings_data['use_average_seq']
-        seq_dep_file = project_settings_data['seq_dep_file']
-        seq_dep_file_path = os.path.join(project_path, str(seq_dep_file))
-        if (int(use_average_seq) == 0 and not seq_dep_file) or not os.path.isfile(seq_dep_file_path):
-            raise serializers.ValidationError(INPUT_SETTINGS_INVALID)
+        if not use_average_seq or int(use_average_seq) == 0:
+            seq_dep_file = project_settings_data['seq_dep_file']
+            seq_dep_file_path = os.path.join(project_path, str(seq_dep_file))
+            if not seq_dep_file or not os.path.isfile(seq_dep_file_path):
+                raise serializers.ValidationError(INPUT_SETTINGS_INVALID)
 
         # if 1, must set external_forces_file
         external_forces = project_settings_data['external_forces']
-        external_forces_file = project_settings_data['external_forces_file']
-        external_forces_file_path = os.path.join(project_path, str(external_forces_file))
-        if (int(external_forces) == 1 and not external_forces_file) or not os.path.isfile(external_forces_file_path):
-            raise serializers.ValidationError(INPUT_SETTINGS_INVALID)
+        if external_forces or int(external_forces) == 1:
+            external_forces_file = project_settings_data['external_forces_file']
+            external_forces_file_path = os.path.join(project_path, str(external_forces_file))
+            if (int(external_forces) == 1 and not external_forces_file) or not os.path.isfile(external_forces_file_path):
+                raise serializers.ValidationError(INPUT_SETTINGS_INVALID)
 
         # if print_red_conf_every > 0
         print_reduced_conf_every = project_settings_data['print_reduced_conf_every']
