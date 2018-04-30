@@ -18,6 +18,8 @@ def generate_input_file(project_id, data):
 
     input_file = open(file=input_path, mode='w')
     for key, value in data.items():
+        if key == 'output_prefix' and value == '':
+            continue
         if key == 'project_id' or key == 'box_size':
             continue
         if key == 'T':
