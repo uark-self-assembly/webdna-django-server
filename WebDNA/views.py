@@ -363,20 +363,24 @@ def get_custom_script_list(request):
 @api_view(['GET'])
 def get_input_list(request):
     # assumes "server-data/server-projects/{project_id}/analysis" is the CWD for script execution
-    # names input variable files as ../{path_in_project_id}/{file_name}
+    # names input variable files as ../{path_in_project_id}/{file_name} or {path_in_analysis}/{filename}
     serialized_body = ProjectExistenceSerializer(data=request.data)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
-        path = os.path(os.getcwd(), 'server-data', 'server-projects', str(project_id))
+        project_path = os.path.join(os.getcwd(), 'server-data', 'server-projects', str(project_id))
+        analysis_path = os.path.join(project_path, 'analysis')
         dir_list = []
-        for (dir_path, dir_names, file_names) in os.walk(path):
+        for (dir_path, dir_names, file_names) in os.walk(project_path):
             if 'analysis' in dir_path:  # analysis output files folder
-                dir_list.extend(file_names)
-                continue
-            # path_from_analysis = "../{path_in_project_id}" or simply ".."
-            path_from_analysis = dir_path.replace(path, '')
-            path_from_analysis = '..' + path_from_analysis
-            # ../{path_in_project_id}/{file_name}
+                path_from_analysis = dir_path.replace(analysis_path, '')
+                if path_from_analysis[0] == os.path.sep:
+                    path_from_analysis = path_from_analysis[1:]
+            else:
+                # path_from_analysis = "../{path_in_project_id}" or simply ".."
+                path_from_analysis = dir_path.replace(project_path, '')
+                path_from_analysis = '..' + path_from_analysis
+
+            # ../{path_in_project_id}/{file_name} or {path_in_analysis}/{filename}
             file_names_len = len(file_names)
             for i in range(0, file_names_len):
                 file_names[i] = os.path.join(path_from_analysis, file_names[i])
