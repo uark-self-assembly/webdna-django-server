@@ -22,7 +22,8 @@ def traj2pdb(path):
 def traj2xtc(path, input_path='trajectory.pdb', output_path='sim/trajectory.xtc'):
     print('gmx trjconv -f {} -o {}'.format(input_path, output_path))
     process = subprocess.Popen(["gmx", "trjconv", "-f", input_path, "-o", output_path],
-                               cwd=os.path.join(os.getcwd(), path), stdout=None)
+                               cwd=os.path.join(os.getcwd(), path), stdout=subprocess.DEVNULL,
+                               stderr=subprocess.DEVNULL)
     process.wait()
 
 
