@@ -118,7 +118,11 @@ class ProjectView(generics.RetrieveUpdateDestroyAPIView):
         for j in jobs:
             if j.finish_time is None:
                 app.control.revoke(j.process_name, terminate=True)
-        shutil.rmtree(path)
+
+        try:
+            shutil.rmtree(path)
+        except:
+            pass
 
         response = generics.RetrieveUpdateDestroyAPIView.delete(self, request, args, kwargs)
         return ObjectResponse.make(response=response)
@@ -244,9 +248,9 @@ def set_project_settings(request):
 
 
 # /api/getsettings
-@api_view(['GET'])
+@api_view(['POST'])
 def get_project_settings(request):
-    serialized_body = ProjectSettingsSerializer(data=request.data)
+    serialized_body = ProjectExistenceSerializer(data=request.data)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
 
@@ -256,7 +260,7 @@ def get_project_settings(request):
 
         return ObjectResponse.make(obj=input_data)
     else:
-        return ErrorResponse.make(serialized_body.errors)
+        return ErrorResponse.make(errors=serialized_body.errors)
 
 
 # /api/file/getprojectfile
@@ -269,7 +273,7 @@ def get_project_file(request):
         file_path = os.path.join('server-data', 'server-projects', str(project_id), str(file_name))
         return get_file_string(file_path)
     else:
-        return ErrorResponse.make(serialized_body.errors)
+        return ErrorResponse.make(errors=serialized_body.errors)
 
 
 # /api/trajectory
@@ -367,6 +371,7 @@ def get_input_list(request):
         dir_list = []
         for (dir_path, dir_names, file_names) in os.walk(path):
             if 'analysis' in dir_path:  # analysis output files folder
+                dir_list.extend(file_names)
                 continue
             # path_from_analysis = "../{path_in_project_id}" or simply ".."
             path_from_analysis = dir_path.replace(path, '')
