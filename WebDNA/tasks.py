@@ -91,7 +91,6 @@ def execute_sim(job_id, project_id, user_id, path):
     print("Simulation completed, generating pdb file for project: " + project_id)
     generate_sim_files(path)
 
-    print("Running analysis scripts for project: " + project_id)
     execute_output_analysis(project_id, user_id, path)
 
     job = Job(id=job_id, finish_time=timezone.now(), process_name=None)
@@ -124,7 +123,9 @@ def generate_sim_files(path):
     zip_simulation(sim_output_path)
 
 
+@app.task()
 def execute_output_analysis(project_id, user_id, path):
+    print("Running analysis scripts for project: " + project_id)
 
     with open(os.path.join(path, 'scriptchain.txt'), mode='r') as scriptchain:
         script_string = scriptchain.readline()

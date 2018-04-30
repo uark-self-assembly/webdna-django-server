@@ -484,3 +484,40 @@ class ScriptChainSerializer(serializers.Serializer):
 
     def update(self, instance, validated_data):
         pass
+
+
+class RunAnalysisSerializer(serializers.Serializer):
+    class Meta:
+        model = Project
+        fields = 'id'
+
+    project_id = serializers.UUIDField()
+    fetched_project = None
+
+    def validate(self, data):
+        project_id = data['project_id']
+
+        query_set = Project.objects.all()
+        fetched = query_set.filter(id=project_id)
+        if not fetched:
+            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+
+        self.fetched_project = fetched[0]
+
+        query_set = Job.objects.all()
+        fetched = query_set.filter(project_id=project_id)
+
+        if not fetched:
+            raise serializers.ValidationError(JOB_NOT_FOUND)
+
+        job = fetched[0]
+        if job.finish_time is None:
+            raise serializers.ValidationError(JOB_CURRENTLY_EXECUTING)
+
+        return data
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass

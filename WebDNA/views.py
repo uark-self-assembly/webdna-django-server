@@ -455,6 +455,7 @@ def stop_execution(request):
     if serialized_body.is_valid():
         job = serialized_body.fetched_job
         app.control.revoke(job.process_name, terminate=True)
+        job.delete()
         return DefaultResponse.make()
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
@@ -471,6 +472,20 @@ def set_scriptchain(request):
         with open(file_path, 'w') as script_chain:
             script_chain.write(script_list)
 
+        return DefaultResponse.make()
+    else:
+        return ErrorResponse.make(errors=serialized_body.errors)
+
+
+@api_view(['POST'])
+def run_analysis_scripts(request):
+    serialized_body = RunAnalysisSerializer(data=request.data)
+    if serialized_body.is_valid():
+        project_id = serialized_body.validated_data['project_id']
+        user_id = serialized_body.fetched_project.user_id
+        path = os.path.join('server-data', 'server-projects', str(project_id))
+
+        execute_output_analysis.delay(project_id, user_id, path)
         return DefaultResponse.make()
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
