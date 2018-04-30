@@ -70,14 +70,15 @@ class ExecutionSerializer(serializers.Serializer):
 class ScriptUploadSerializer(serializers.Serializer):
     class Meta:
         model = Script
-        fields = ('file_name', 'user')
+        fields = ('file_name', 'user', 'description')
 
         file_name = serializers.CharField(max_length=128)
         user = serializers.CharField(max_length=36)
         file_obj = serializers.FileField()
+        description = serializers.CharField(max_length=512)
 
         def create(self, validated_data):
-            script = Script.objects.create(file_name=validated_data['file_name'], user=validated_data['user'])
+            script = Script.objects.create(file_name=validated_data['file_name'], user=validated_data['user'], description=validated_data['description'])
             script.save()
             return script
 
@@ -88,6 +89,7 @@ class ScriptUploadSerializer(serializers.Serializer):
             file_name = script_data['file_name']
             user = script_data['user']
             file_obj = script_data['file']
+            description = script_data['description']
 
             # make sure it doesn't already exist
             query_set = Script.objects.all()

@@ -273,7 +273,7 @@ def get_project_file(request):
         file_path = os.path.join('server-data', 'server-projects', str(project_id), str(file_name))
         return get_file_string(file_path)
     else:
-        return ErrorResponse.make(serialized_body.errors)
+        return ErrorResponse.make(errors=serialized_body.errors)
 
 
 # /api/trajectory
