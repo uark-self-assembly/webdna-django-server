@@ -42,6 +42,7 @@ urlpatterns = [
     url(r'^api/scripts/getoutputlist', views.get_output_list),
     url(r'^api/scripts/useroutput', views.get_user_output),
     url(r'^api/scripts/userlog', views.get_user_log),
+    url(r'^api/scripts/setscriptchain', views.set_scriptchain),
 ]
 
 url_patterns = format_suffix_patterns(urlpatterns)

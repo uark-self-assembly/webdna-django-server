@@ -458,3 +458,19 @@ def stop_execution(request):
         return DefaultResponse.make()
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
+
+
+@api_view(['POST'])
+def set_scriptchain(request):
+    serialized_body = ScriptChainSerializer(data=request.data)
+    if serialized_body.is_valid():
+        project_id = serialized_body.validated_data['project_id']
+        file_path = os.path.join('server-data', 'server-projects', str(project_id), 'scriptchain.txt')
+        script_list = serialized_body.validated_data['script_list']
+
+        with open(file_path, 'w') as script_chain:
+            script_chain.write(script_list)
+
+        return DefaultResponse.make()
+    else:
+        return ErrorResponse.make(errors=serialized_body.errors)
