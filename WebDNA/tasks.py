@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import os
 import subprocess
+import shutil
 from zipfile import ZipFile
 from WebDNA.models import *
 from webdna_server.celery import app
@@ -62,7 +63,7 @@ def generate_dat_top(project_id, box_size):
 
 
 @app.task()
-def execute_sim(job_id, project_id, path):
+def execute_sim(job_id, project_id, user_id, path):
     job = Job(id=job_id, process_name=execute_sim.request.id, finish_time=None)
     job.save(update_fields=['process_name', 'finish_time'])
 
@@ -84,8 +85,10 @@ def execute_sim(job_id, project_id, path):
     log.close()
 
     print("Simulation completed, generating pdb file for project: " + project_id)
-
     generate_sim_files(path)
+
+    print("Running analysis scripts for project: " + project_id)
+    execute_output_analysis(project_id, user_id, path)
 
     job = Job(id=job_id, finish_time=timezone.now(), process_name=None)
     job.save(update_fields=['process_name', 'finish_time'])
@@ -114,3 +117,19 @@ def generate_sim_files(path):
     pdb2first_frame(path, input_file='trajectory.pdb', output_file=os.path.join('sim', 'trajectory.pdb'))
 
     zip_simulation(sim_output_path)
+
+
+def execute_output_analysis(project_id, user_id, path):
+
+    with open(os.path.join(path, "scriptchain.txt"), mode='r') as scriptchain:
+        script_string = scriptchain.readline()
+
+    if len(script_string) == 0:
+        return
+
+    scripts = [x.strip() for x in script_string.split(',')]
+
+    for script in scripts:
+        shutil.copy2(os.path.join('server-data', 'server-users', str(user_id), 'scripts', script),
+                     os.path.join(path, 'analysis'))
+

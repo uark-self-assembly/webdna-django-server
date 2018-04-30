@@ -83,6 +83,8 @@ class ProjectList(generics.CreateAPIView, generics.ListAPIView):
 
     def post(self, request, *args, **kwargs):
         response = generics.CreateAPIView.post(self, request, args, kwargs)
+        fetched_project = Project.objects.all().filter(id=response.data['id'])
+        os.makedirs(os.path.join('server-data', 'server-projects', str(fetched_project[0].id), 'analysis'))
         return ObjectResponse.make(response=response)
 
     def get(self, request, *args, **kwargs):
@@ -139,6 +141,7 @@ def register(request):
     serialized_body = RegistrationSerializer(data=request.data)
     if serialized_body.is_valid():
         user_serializer = UserSerializer(instance=serialized_body.save())
+        os.makedirs(os.path.join('server-data', 'server-users', str(user_serializer.data['id'], 'scripts')))
         return RegistrationResponse.make(user_serializer.data)
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
@@ -154,6 +157,8 @@ def execute(request):
             job = serialized_body.create(serialized_body.validated_data)
 
         project_id = serialized_body.validated_data['project_id']
+        fetched_project = Project.objects.all().filter(project_id=project_id)
+        user_id = fetched_project[0].user
         path = os.path.join('server-data', 'server-projects', str(project_id))
 
         input_file = os.path.join(path, 'input.txt')
@@ -161,7 +166,7 @@ def execute(request):
         generated_top = os.path.join(path, 'generated.top')
         if os.path.isdir(path):
             if os.path.isfile(input_file) and os.path.isfile(generated_dat) and os.path.isfile(generated_top):
-                execute_sim.delay(job.id, job.project_id, path)
+                execute_sim.delay(job.id, job.project_id, user_id, path)
                 return ExecutionResponse.make()
         else:
             return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
