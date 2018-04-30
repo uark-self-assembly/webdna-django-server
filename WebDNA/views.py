@@ -421,3 +421,20 @@ def get_user_output(request):
     else:
         return ErrorResponse.make(status=status.HTTP_400_BAD_REQUEST, message=PROJECT_NOT_FOUND)
 
+
+@api_view(['GET'])
+def get_user_log(request):
+    serialized_body = UserOutputRequestSerializer(data=request.query_params)
+    if serialized_body.is_valid():
+        project_id = serialized_body.validated_data['id']
+        file_path = os.path.join('server-data', 'server-projects', str(project_id), 'analysis', 'analysis.log')
+        if os.path.isfile(file_path):
+            with open(file_path, 'rb') as output_file:
+                response = HttpResponse(output_file, content_type='text/plain')
+                response['Content-Disposition'] = 'attachment; filename="analysis.log"'
+            return response
+        else:
+            return ErrorResponse.make(status=status.HTTP_404_NOT_FOUND,
+                                      message='analysis.log does not exist for given project')
+    else:
+        return ErrorResponse.make(status=status.HTTP_400_BAD_REQUEST, message=PROJECT_NOT_FOUND)
