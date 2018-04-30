@@ -44,6 +44,7 @@ urlpatterns = [
     url(r'^api/scripts/userlog', views.get_user_log),
     url(r'^api/scripts/setscriptchain', views.set_scriptchain),
     url(r'^api/scripts/runanalysis', views.run_analysis_scripts),
+    url(r'^api/scripts/$', views.ScriptList.as_view()),
 ]
 
 url_patterns = format_suffix_patterns(urlpatterns)

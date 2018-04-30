@@ -107,7 +107,8 @@ class ScriptUploadSerializer(serializers.Serializer):
         description = serializers.CharField(max_length=512)
 
         def create(self, validated_data):
-            script = Script.objects.create(file_name=validated_data['file_name'], user=validated_data['user'], description=validated_data['description'])
+            script = Script.objects.create(file_name=validated_data['file_name'], user=validated_data['user'],
+                                           description=validated_data['description'])
             script.save()
             return script
 
@@ -173,6 +174,12 @@ class UserSerializer(serializers.ModelSerializer):
 class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
+        fields = '__all__'
+
+
+class ScriptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Script
         fields = '__all__'
 
 

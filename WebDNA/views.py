@@ -92,6 +92,18 @@ class ProjectList(generics.CreateAPIView, generics.ListAPIView):
         return ObjectResponse.make(response=response)
 
 
+class ScriptList(generics.CreateAPIView, generics.ListAPIView):
+        queryset = Script.objects.all()
+        serializer_class = ScriptSerializer
+
+        def post(self, request, *args, **kwargs):
+            pass
+
+        def get(self, request, *args, **kwargs):
+            response = generics.ListAPIView.get(self, request, args, kwargs)
+            return ObjectResponse.make(response=response)
+
+
 # /api/projects
 class ProjectView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'id'
