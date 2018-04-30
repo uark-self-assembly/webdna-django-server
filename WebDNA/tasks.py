@@ -3,6 +3,8 @@ from __future__ import absolute_import
 import os
 import subprocess
 import shutil
+import runpy
+import sys
 from zipfile import ZipFile
 from WebDNA.models import *
 from webdna_server.celery import app
@@ -20,7 +22,7 @@ def traj2pdb(path):
 def traj2xtc(path, input_path='trajectory.pdb', output_path='sim/trajectory.xtc'):
     print('gmx trjconv -f {} -o {}'.format(input_path, output_path))
     process = subprocess.Popen(["gmx", "trjconv", "-f", input_path, "-o", output_path],
-                               cwd=os.path.join(os.getcwd(), path))
+                               cwd=os.path.join(os.getcwd(), path), stdout=None)
     process.wait()
 
 
@@ -95,6 +97,7 @@ def execute_sim(job_id, project_id, user_id, path):
 
 
 def generate_sim_files(path):
+    print('In generate_sim_files: ' + path)
     traj2pdb(path)
 
     sim_output_path = os.path.join(path, 'sim')
@@ -121,7 +124,7 @@ def generate_sim_files(path):
 
 def execute_output_analysis(project_id, user_id, path):
 
-    with open(os.path.join(path, "scriptchain.txt"), mode='r') as scriptchain:
+    with open(os.path.join(path, 'scriptchain.txt'), mode='r') as scriptchain:
         script_string = scriptchain.readline()
 
     if len(script_string) == 0:
@@ -132,4 +135,18 @@ def execute_output_analysis(project_id, user_id, path):
     for script in scripts:
         shutil.copy2(os.path.join('server-data', 'server-users', str(user_id), 'scripts', script),
                      os.path.join(path, 'analysis'))
+
+    file_globals = {}
+    stdout = sys.stdout
+    sys.stdout = open(os.path.join(path, 'analysis', 'analysis.log'), 'w')
+    try:
+        for script in scripts:
+            file_globals = runpy.run_path(os.path.join(path, 'analysis', script), init_globals=file_globals)
+    except Exception as e:
+        print("Error caught in user script: " + str(e))
+    sys.stdout.close()
+    sys.stdout = stdout
+
+    print('Analysis scripts finished for project: ' + str(project_id))
+
 

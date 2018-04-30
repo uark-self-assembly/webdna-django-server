@@ -157,8 +157,8 @@ def execute(request):
             job = serialized_body.create(serialized_body.validated_data)
 
         project_id = serialized_body.validated_data['project_id']
-        fetched_project = Project.objects.all().filter(project_id=project_id)
-        user_id = fetched_project[0].user
+        fetched_project = Project.objects.all().filter(id=project_id)
+        user_id = fetched_project[0].user_id
         path = os.path.join('server-data', 'server-projects', str(project_id))
 
         input_file = os.path.join(path, 'input.txt')
