@@ -49,7 +49,7 @@ class FileUploadView(APIView):
         return ErrorResponse.make(status=status.HTTP_204_NO_CONTENT)
 
 
-# api/script/upload
+# api/scripts/upload
 class ScriptUploadView(APIView):
     parser_classes = (MultiPartParser,)
 

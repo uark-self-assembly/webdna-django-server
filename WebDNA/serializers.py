@@ -97,42 +97,42 @@ class TerminateSerializer(serializers.Serializer):
 
 
 class ScriptUploadSerializer(serializers.Serializer):
+    file_name = serializers.CharField(max_length=128)
+    user = serializers.CharField(max_length=36)
+    file = serializers.FileField()
+    description = serializers.CharField(max_length=512)
+
     class Meta:
         model = Script
         fields = ('file_name', 'user', 'description')
 
-        file_name = serializers.CharField(max_length=128)
-        user = serializers.CharField(max_length=36)
-        file_obj = serializers.FileField()
-        description = serializers.CharField(max_length=512)
+    def create(self, validated_data):
+        script = Script.objects.create(file_name=validated_data['file_name'], user_id=validated_data['user'],
+                                       description=validated_data['description'])
+        script.save()
+        return script
 
-        def create(self, validated_data):
-            script = Script.objects.create(file_name=validated_data['file_name'], user=validated_data['user'],
-                                           description=validated_data['description'])
-            script.save()
-            return script
+    def update(self, instance, validated_data):
+        pass
 
-        def update(self, instance, validated_data):
-            pass
+    def validate(self, script_data):
+        self.file_name = script_data['file_name']
+        self.user = script_data['user']
+        self.file = script_data['file']
+        self.description = script_data['description']
 
-        def validate(self, script_data):
-            file_name = script_data['file_name']
-            user = script_data['user']
-            file_obj = script_data['file']
-            description = script_data['description']
+        # make sure it doesn't already exist
+        query_set = Script.objects.all()
+        fetched = query_set.filter(file_name=self.file_name, user=self.user)
+        if fetched:
+            raise serializers.ValidationError(SCRIPTS_ALREADY_EXISTS)
 
-            # make sure it doesn't already exist
-            query_set = Script.objects.all()
-            fetched = query_set.filter(file_name=file_name, user=user)
-            if fetched:
-                raise serializers.ValidationError(SCRIPTS_ALREADY_EXISTS)
+        # make the directory
+        path = os.path.join(os.getcwd(), 'server-data', 'server-users', str(self.user), 'scripts')
+        if not os.path.isdir(path):
+            os.makedirs(path)
 
-            # make the directory
-            path = os.path.join(os.getcwd(), 'server-data', 'server-users', str(user), 'scripts')
-            if not os.path.isdir(path):
-                os.makedirs(path)
-
-            return script_data
+        return script_data
 
 class FileSerializer(ExecutionSerializer):
     file_name = serializers.CharField(max_length=128)
