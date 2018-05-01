@@ -528,3 +528,59 @@ class RunAnalysisSerializer(serializers.Serializer):
 
     def update(self, instance, validated_data):
         pass
+
+
+class ScriptDeleteSerializer(serializers.Serializer):
+    class Meta:
+        model = Script
+        fields = 'id'
+
+    script_id = serializers.UUIDField()
+    fetched_script = None
+
+    def validate(self, data):
+        script_id = data['script_id']
+
+        query_set = Script.objects.all()
+        fetched = query_set.filter(id=script_id)
+        if not fetched:
+            raise serializers.ValidationError(SCRIPTS_NOT_FOUND)
+
+        self.fetched_script = fetched[0]
+        return data
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
+
+
+class ScriptChainRequestSerializer(serializers.Serializer):
+    class Meta:
+        model = Project
+        fields = 'id'
+
+    project_id = serializers.UUIDField()
+    fetched_project = None
+
+    def validate(self, data):
+        project_id = data['project_id']
+
+        query_set = Project.objects.all()
+        fetched = query_set.filter(id=project_id)
+        if not fetched:
+            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+
+        if not os.path.isfile(os.path.join('server-data', 'server-projects', str(project_id), 'scriptchain.txt')):
+            raise serializers.ValidationError(SCRIPT_CHAIN_NOT_FOUND)
+
+        self.fetched_project = fetched[0]
+        self.project_id = project_id
+        return data
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass

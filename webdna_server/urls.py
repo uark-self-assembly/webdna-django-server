@@ -45,6 +45,8 @@ urlpatterns = [
     url(r'^api/scripts/setscriptchain', views.set_scriptchain),
     url(r'^api/scripts/runanalysis', views.run_analysis_scripts),
     url(r'^api/scripts/$', views.ScriptList.as_view()),
+    url(r'^api/scripts/delete', views.delete_script),
+    url(r'^api/scripts/getscriptchain', views.fetch_script_chain),
 ]
 
 url_patterns = format_suffix_patterns(urlpatterns)
