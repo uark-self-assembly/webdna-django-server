@@ -528,3 +528,29 @@ class RunAnalysisSerializer(serializers.Serializer):
 
     def update(self, instance, validated_data):
         pass
+
+
+class ScriptDeleteSerializer(serializers.Serializer):
+    class Meta:
+        model = Script
+        fields = 'id'
+
+    script_id = serializers.UUIDField()
+    fetched_script = None
+
+    def validate(self, data):
+        script_id = data['script_id']
+
+        query_set = Script.objects.all()
+        fetched = query_set.filter(id=script_id)
+        if not fetched:
+            raise serializers.ValidationError(SCRIPTS_NOT_FOUND)
+
+        self.fetched_script = fetched[0]
+        return data
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
