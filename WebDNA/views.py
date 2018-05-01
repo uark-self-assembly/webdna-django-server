@@ -314,6 +314,22 @@ def fetch_traj(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
+# /api/projects/zipdownload
+@app_view(['GET'])
+def project_zip(request):
+    serialized_body = ProjectExistenceSerializer(data=request.data)
+    if serialized_body.is_valid():
+        project_id = serialized_body.validated_data['project_id']
+        project_path = os.path.join('server-data', 'server-projects', str(project_id))
+        zip_project(project_path)
+        with open(os.path.join(project_path, 'project.zip'), 'rb') as archive_file:
+            response = HttpResponse(archive_file, content_type='application/zip')
+            response['Content-Disposition'] = 'attachment; filename="project.zip"'
+            archive_file.close()
+        return response
+    else:
+        return ErrorResponse.make(errors=serialized_body.errors)
+
 # /api/file/download
 @api_view(['GET'])
 def download_project_file(request, path):

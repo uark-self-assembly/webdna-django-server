@@ -52,6 +52,18 @@ def zip_simulation(path):
                 archive.write(os.path.join(path, 'trajectory.xtc'), 'trajectory.xtc')
 
 
+def zip_project(project_path):
+    zip_path = os.path.join(project_path, 'project.zip')
+    if os.path.isdir(project_path):
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+        with ZipFile(os.path.join(project_path, 'project.zip'), 'w') as archive:
+            for (dir_path, dir_names, file_names) in os.walk(project_path):
+                file_names_len = len(file_names)
+                for i in range(0, file_names_len):
+                    archive.write(os.path.join(dir_path, file_names[i]), file_names[i])
+
+
 @app.task()
 def generate_dat_top(project_id, box_size):
     path = os.path.join('server-data', 'server-projects', str(project_id))
