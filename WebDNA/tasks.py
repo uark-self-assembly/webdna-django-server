@@ -19,10 +19,10 @@ def traj2pdb(path):
 
 
 @app.task()
-def traj2xtc(path, input_path='trajectory.pdb', output_path='sim/trajectory.xtc'):
+def traj2xtc(input_path='trajectory.pdb', output_path='sim/trajectory.xtc'):
     print('gmx trjconv -f {} -o {}'.format(input_path, output_path))
     process = subprocess.Popen(["gmx", "trjconv", "-f", input_path, "-o", output_path],
-                               cwd=os.path.join(os.getcwd(), path), stdout=subprocess.DEVNULL,
+                               cwd=os.getcwd(), stdout=subprocess.DEVNULL,
                                stderr=subprocess.DEVNULL)
     process.wait()
 
@@ -101,7 +101,7 @@ def execute_sim(job_id, project_id, user_id, path):
     log.close()
 
     print("Simulation completed, generating pdb file for project: " + project_id)
-    generate_sim_files(path)
+    generate_sim_files(path, project_id)
 
     execute_output_analysis(project_id, user_id, path)
 
@@ -109,19 +109,21 @@ def execute_sim(job_id, project_id, user_id, path):
     job.save(update_fields=['process_name', 'finish_time'])
 
 
-def generate_sim_files(path):
+def generate_sim_files(path, project_id):
     print('In generate_sim_files: ' + path)
     traj2pdb(path)
 
-    sim_output_path = os.path.join(path, 'sim')
+    sim_output_path = os.path.join('server-data', 'server-sims')
 
     try:
         os.makedirs(sim_output_path)
     except FileExistsError:
         pass
 
-    pdb_file_path = os.path.join(sim_output_path, 'trajectory.pdb')
-    xtc_file_path = os.path.join(sim_output_path, 'trajectory.xtc')
+    pdb_file_path = os.path.join(sim_output_path, project_id + '.pdb')
+    xtc_file_path = os.path.join(sim_output_path, project_id + '.xtc')
+
+    original_pdb_path = os.path.join(path, 'trajectory.pdb')
 
     try:
         os.remove(pdb_file_path)
@@ -129,14 +131,15 @@ def generate_sim_files(path):
     except OSError:
         pass
 
-    traj2xtc(path, input_path='trajectory.pdb', output_path=os.path.join('sim', 'trajectory.xtc'))
-    pdb2first_frame(path, input_file='trajectory.pdb', output_file=os.path.join('sim', 'trajectory.pdb'))
-
-    zip_simulation(sim_output_path)
+    traj2xtc(input_path=original_pdb_path, output_path=xtc_file_path)
+    pdb2first_frame(input_file=original_pdb_path, output_file=pdb_file_path)
 
 
 @app.task()
 def execute_output_analysis(project_id, user_id, path):
+    if not os.path.isfile(os.path.join(path, 'scriptchain.txt')):
+        return
+
     print("Running analysis scripts for project: " + project_id)
 
     with open(os.path.join(path, 'scriptchain.txt'), mode='r') as scriptchain:
