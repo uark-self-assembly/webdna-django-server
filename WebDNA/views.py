@@ -520,8 +520,8 @@ def fetch_script_chain(request):
         project_id = str(serialized_body.project_id)
         file_path = os.path.join('server-data', 'server-projects', project_id, 'scriptchain.txt')
         with open(file_path, 'rb') as script_chain:
-            response = HttpResponse(script_chain, content_type='text/plain')
-            response['Content-Disposition'] = 'attachment; filename="scriptchain.txt"'
-            return response
+            response = script_chain.readlines()
+
+        return ObjectResponse.make(obj=response)
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
