@@ -27,13 +27,11 @@ def traj2xtc(input_path='trajectory.pdb', output_path='sim/trajectory.xtc'):
     process.wait()
 
 
-def pdb2first_frame(path, input_file='trajectory.pdb', output_file='trajectory_0.pdb'):
-    input_path = os.path.join(path, input_file)
-    output_path = os.path.join(path, output_file)
+def pdb2first_frame(input_file='trajectory.pdb', output_file='trajectory_0.pdb'):
 
-    outfile = open(output_path, 'w')
+    outfile = open(output_file, 'w')
 
-    with open(input_path) as infile:
+    with open(input_file) as infile:
         for line in infile:
             if 'ENDMDL' not in line:
                 outfile.write(line)
@@ -77,18 +75,23 @@ def generate_dat_top(project_id, box_size):
     return GENERATED_FILES
 
 
+def clean_files(path):
+    files = ['trajectory.pdb', 'trajectory.dat', 'last_conf.dat', os.path.join('analysis', 'output.txt')]
+
+    for file in files:
+        file_path = os.path.join(path, file)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+        else:
+            continue
+
+
 @app.task()
 def execute_sim(job_id, project_id, user_id, path):
     job = Job(id=job_id, process_name=execute_sim.request.id, finish_time=None)
     job.save(update_fields=['process_name', 'finish_time'])
 
-    try:
-        os.remove(os.path.join(path, "trajectory.xtc"))
-        os.remove(os.path.join(path, "trajectory.pdb"))
-        os.remove(os.path.join(path, project_id + ".zip"))
-        os.remove(os.path.join(path, 'analysis', 'output.txt'))
-    except OSError:
-        pass
+    clean_files(path)
 
     print("Received new execution for project: " + project_id)
     log_file = os.path.join(path, 'stdout.log')

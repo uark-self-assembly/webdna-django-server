@@ -300,15 +300,11 @@ def fetch_traj(request):
             trajectory_file = os.path.join(path, 'trajectory.dat')
             topology_file = os.path.join(path, 'generated.top')
             if os.path.isfile(trajectory_file) and os.path.isfile(topology_file):
-                generate_sim_files(path)
+                generate_sim_files(path, str(project_id))
             else:
                 return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        with open(os.path.join(path, 'sim', 'simulation.zip'), 'rb') as archive_file:
-            response = HttpResponse(archive_file, content_type='application/zip')
-            response['Content-Disposition'] = 'attachment; filename="simulation.zip"'
-            archive_file.close()
-        return response
+        return DefaultResponse.make()
 
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
@@ -463,7 +459,7 @@ def get_user_output(request):
 def get_user_log(request):
     serialized_body = UserOutputRequestSerializer(data=request.query_params)
     if serialized_body.is_valid():
-        project_id = serialized_body.validated_data['id']
+        project_id = serialized_body.validated_data['project_id']
         file_path = os.path.join('server-data', 'server-projects', str(project_id), 'analysis', 'analysis.log')
         if os.path.isfile(file_path):
             with open(file_path, 'rb') as output_file:

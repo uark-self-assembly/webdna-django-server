@@ -13,7 +13,7 @@ class UserOutputRequestSerializer(serializers.Serializer):
         model = Project
         fields = 'id'
 
-    id = serializers.CharField(max_length=36)
+    project_id = serializers.CharField(max_length=36)
 
     def create(self, validated_data):
         pass
@@ -22,7 +22,7 @@ class UserOutputRequestSerializer(serializers.Serializer):
         pass
 
     def validate(self, data):
-        project_id = data['id']
+        project_id = data['project_id']
         query_set = Project.objects.all()
         fetched = query_set.filter(id=project_id)
         if not fetched:
