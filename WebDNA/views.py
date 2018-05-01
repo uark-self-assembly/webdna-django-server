@@ -315,7 +315,7 @@ def fetch_traj(request):
 
 
 # /api/projects/zipdownload
-@app_view(['GET'])
+@api_view(['GET'])
 def project_zip(request):
     serialized_body = ProjectExistenceSerializer(data=request.data)
     if serialized_body.is_valid():
