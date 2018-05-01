@@ -511,3 +511,17 @@ def delete_script(request):
         return DefaultResponse.make()
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
+
+
+@api_view(['GET'])
+def fetch_script_chain(request):
+    serialized_body = ScriptChainRequestSerializer(data=request.query_params)
+    if serialized_body.is_valid():
+        project_id = str(serialized_body.project_id)
+        file_path = os.path.join('server-data', 'server-projects', project_id, 'scriptchain.txt')
+        with open(file_path, 'rb') as script_chain:
+            response = HttpResponse(script_chain, content_type='text/plain')
+            response['Content-Disposition'] = 'attachment; filename="scriptchain.txt"'
+            return response
+    else:
+        return ErrorResponse.make(errors=serialized_body.errors)
