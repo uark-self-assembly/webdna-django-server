@@ -190,6 +190,23 @@ def execute(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
+@api_view(['GET'])
+def check_running(request):
+    serialized_body = CheckStatusSerializer(data=request.query_params)
+    if serialized_body.is_valid():
+        project_id = serialized_body.validated_data['project_id']
+        path = os.path.join('server-data', 'server-projects', str(project_id))
+        running = True
+
+        if serialized_body.fetched_job.finish_time is not None:
+            running = False
+
+        response_data = {'running': running}
+        return ObjectResponse.make(response_data)
+    else:
+        return ErrorResponse.make(errors=serialized_body.errors)
+
+
 # /api/checkstatus
 @api_view(['POST'])
 def check_status(request):

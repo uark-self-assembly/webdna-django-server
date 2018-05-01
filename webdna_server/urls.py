@@ -29,6 +29,7 @@ urlpatterns = [
     url(r'^api/execute', views.execute),
     url(r'^api/terminate', views.stop_execution),
     url(r'^api/checkstatus', views.check_status),
+    url(r'^api/checkrunning', views.check_running),
     url(r'^api/applysettings', views.set_project_settings),
     url(r'^api/getsettings', views.get_project_settings),
     url(r'^api/file/upload', views.FileUploadView.as_view()),
