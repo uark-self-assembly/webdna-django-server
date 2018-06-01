@@ -204,7 +204,8 @@ def check_running(request):
         response_data = {'running': running}
         return ObjectResponse.make(response_data)
     else:
-        return ErrorResponse.make(errors=serialized_body.errors)
+        response_data = {'running': False}
+        return ObjectResponse.make(response_data)
 
 
 # /api/checkstatus
