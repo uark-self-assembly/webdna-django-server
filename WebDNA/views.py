@@ -173,17 +173,33 @@ def execute(request):
             job = serialized_body.create(serialized_body.validated_data)
 
         project_id = serialized_body.validated_data['project_id']
+        should_regenerate = serialized_body.validated_data['should_regenerate']
         fetched_project = Project.objects.all().filter(id=project_id)
         user_id = fetched_project[0].user_id
         path = os.path.join('server-data', 'server-projects', str(project_id))
 
         input_file = os.path.join(path, 'input.txt')
+        sequence_file = os.path.join(path, 'sequence.txt')
         generated_dat = os.path.join(path, 'generated.dat')
         generated_top = os.path.join(path, 'generated.top')
+
         if os.path.isdir(path):
-            if os.path.isfile(input_file) and os.path.isfile(generated_dat) and os.path.isfile(generated_top):
-                execute_sim.delay(job.id, job.project_id, user_id, path)
+            is_project_executable = False
+
+            if should_regenerate and os.path.isfile(sequence_file):
+                is_project_executable = True
+            else:
+                if os.path.isfile(generated_dat) and os.path.isfile(generated_top):
+                    is_project_executable = True
+
+            if not os.path.isfile(input_file):
+                is_project_executable = False
+
+            if is_project_executable:
+                execute_sim.delay(job.id, job.project_id, user_id, path, should_regenerate)
                 return ExecutionResponse.make()
+            else:
+                return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
             return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
@@ -246,11 +262,9 @@ def set_project_settings(request):
     serialized_body = ProjectSettingsSerializer(data=request.data)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
-        box_size = serialized_body.validated_data['box_size']
 
-        generated_files_status = generate_dat_top(project_id, box_size)
         input_file_status = generate_input_file(project_id, serialized_body.validated_data)
-        if input_file_status == MISSING_PROJECT_FILES or generated_files_status == MISSING_PROJECT_FILES:
+        if input_file_status == MISSING_PROJECT_FILES:
             return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
 
         return DefaultResponse.make(status.HTTP_201_CREATED)

@@ -9,6 +9,7 @@ from zipfile import ZipFile
 from WebDNA.models import *
 from webdna_server.celery import app
 import WebDNA.messages as messages
+import WebDNA.util.oxDNA_util as oxDNAutil
 
 
 @app.task()
@@ -70,15 +71,28 @@ def zip_project(project_path):
 
 
 @app.task()
-def generate_dat_top(project_id, box_size):
+def generate_dat_top(project_id, box_size, log_path):
     path = os.path.join('server-data', 'server-projects', str(project_id))
     sequence_path = os.path.join(path, "sequence.txt")
+
+    print(log_path)
 
     if not os.path.isfile(sequence_path):
         return messages.MISSING_PROJECT_FILES
 
-    process = subprocess.Popen(["generate-sa.py", str(box_size), "sequence.txt"], cwd=os.path.join(os.getcwd(), path))
+    if log_path is not None:
+        print("Writing output to a log file")
+        log = open(file=log_path, mode='w')
+        process = subprocess.Popen(["generate-sa.py", str(box_size), "sequence.txt"],
+                                   cwd=os.path.join(os.getcwd(), path), stderr=log)
+    else:
+        print("Using default process")
+        process = subprocess.Popen(["generate-sa.py", str(box_size), "sequence.txt"], cwd=os.path.join(os.getcwd(), path))
+
     process.wait()
+    if log_path:
+        log.close()
+
     return messages.GENERATED_FILES
 
 
@@ -101,11 +115,17 @@ def clean_files(path):
 
 
 @app.task()
-def execute_sim(job_id, project_id, user_id, path):
+def execute_sim(job_id, project_id, user_id, path, should_regenerate):
     job = Job(id=job_id, process_name=execute_sim.request.id, finish_time=None)
     job.save(update_fields=['process_name', 'finish_time'])
 
     clean_files(path)
+
+    if should_regenerate:
+        print("Regenerating topology for project: " + project_id)
+        input_data = oxDNAutil.get_input_file_as_serializer_data(project_id)
+        box_size = input_data['box_size']
+        generate_dat_top(project_id, box_size, os.path.join(path, 'stdout.log'))
 
     print("Received new execution for project: " + project_id)
     log_file = os.path.join(path, 'stdout.log')

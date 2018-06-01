@@ -37,6 +37,7 @@ class ExecutionSerializer(serializers.Serializer):
         fields = 'project_id'
 
     project_id = serializers.CharField(max_length=36)
+    should_regenerate = serializers.BooleanField()
     fetched_job = None
 
     def create(self, validated_data):
