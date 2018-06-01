@@ -8,14 +8,18 @@ import sys
 from zipfile import ZipFile
 from WebDNA.models import *
 from webdna_server.celery import app
-from WebDNA.messages import *
+import WebDNA.messages as messages
 
 
 @app.task()
 def traj2pdb(path):
+    if not os.path.exists(os.path.join(path, 'trajectory.dat')):
+        return False
+
     process = subprocess.Popen(["traj2pdb.py", "trajectory.dat", "generated.top", "trajectory.pdb"],
                                cwd=os.path.join(os.getcwd(), path))
     process.wait()
+    return True
 
 
 @app.task()
@@ -31,13 +35,16 @@ def pdb2first_frame(input_file='trajectory.pdb', output_file='trajectory_0.pdb')
 
     outfile = open(output_file, 'w')
 
-    with open(input_file) as infile:
-        for line in infile:
-            if 'ENDMDL' not in line:
-                outfile.write(line)
-            else:
-                outfile.write('ENDMDL')
-                break
+    try:
+        with open(input_file) as infile:
+            for line in infile:
+                if 'ENDMDL' not in line:
+                    outfile.write(line)
+                else:
+                    outfile.write('ENDMDL')
+                    break
+    except FileNotFoundError:
+        pass
 
     outfile.close()
 
@@ -68,15 +75,22 @@ def generate_dat_top(project_id, box_size):
     sequence_path = os.path.join(path, "sequence.txt")
 
     if not os.path.isfile(sequence_path):
-        return MISSING_PROJECT_FILES
+        return messages.MISSING_PROJECT_FILES
 
     process = subprocess.Popen(["generate-sa.py", str(box_size), "sequence.txt"], cwd=os.path.join(os.getcwd(), path))
     process.wait()
-    return GENERATED_FILES
+    return messages.GENERATED_FILES
 
 
 def clean_files(path):
-    files = ['trajectory.pdb', 'trajectory.dat', 'last_conf.dat', os.path.join('analysis', 'output.txt')]
+    files = [
+        'trajectory.pdb',
+        'trajectory.dat',
+        'last_conf.dat',
+        'log.dat',
+        'stdout.log',
+        'energy.dat',
+        os.path.join('analysis', 'output.txt')]
 
     for file in files:
         file_path = os.path.join(path, file)
@@ -104,7 +118,9 @@ def execute_sim(job_id, project_id, user_id, path):
     log.close()
 
     print("Simulation completed, generating pdb file for project: " + project_id)
-    generate_sim_files(path, project_id)
+
+    if not generate_sim_files(path, project_id):
+        print('Unable to convert simulation to visualizer output.')
 
     execute_output_analysis(project_id, user_id, path)
 
@@ -114,7 +130,8 @@ def execute_sim(job_id, project_id, user_id, path):
 
 def generate_sim_files(path, project_id):
     print('In generate_sim_files: ' + path)
-    traj2pdb(path)
+    if not traj2pdb(path):
+        return False
 
     sim_output_path = os.path.join('server-data', 'server-sims')
 
@@ -136,6 +153,7 @@ def generate_sim_files(path, project_id):
 
     traj2xtc(input_path=original_pdb_path, output_path=xtc_file_path)
     pdb2first_frame(input_file=original_pdb_path, output_file=pdb_file_path)
+    return True
 
 
 @app.task()

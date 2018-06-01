@@ -20,7 +20,7 @@ def generate_input_file(project_id, data):
     for key, value in data.items():
         if key == 'output_prefix' and value == '':
             continue
-        if key == 'project_id' or key == 'box_size':
+        if key == 'project_id':
             continue
         if key == 'T':
             value = value + ' K'

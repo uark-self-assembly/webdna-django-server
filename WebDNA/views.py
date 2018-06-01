@@ -240,25 +240,6 @@ def check_status(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
-# /api/file/visual
-# @api_view(['GET'])
-# def get_visual(request):
-#     serialized_body = VisualizationSerializer(data=request.data)
-#     if serialized_body.is_valid():
-#         project_id = serialized_body.validated_data['project_id']
-#         project_path = os.path.join('server-data', 'server-projects', str(project_id))
-#
-#         trajectory_file = os.path.join(project_path, 'trajectory.dat')
-#         if os.path.isfile(trajectory_file):
-#             file_string = get_pdb_file.delay(project_id)
-#             response_data = {'file_string': file_string, 'project_id': project_id}
-#             return ObjectResponse.make(obj=response_data)
-#         else:
-#             return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
-#     else:
-#         return ErrorResponse.make(errors=serialized_body.errors)
-
-
 # /api/applysettings
 @api_view(['POST'])
 def set_project_settings(request):
