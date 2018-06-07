@@ -13,7 +13,7 @@ def generate_input_file(project_id, data):
     if not os.path.exists(project_path):
         os.makedirs(project_path)
 
-    if not (os.path.isfile(top_path) and os.path.isfile(dat_path) and os.path.isfile(sequence_path)):
+    if not os.path.isfile(sequence_path):
         return MISSING_PROJECT_FILES
 
     input_file = open(file=input_path, mode='w')
