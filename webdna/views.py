@@ -1,27 +1,26 @@
-from django.http import JsonResponse, HttpResponse, QueryDict
-from rest_framework.views import APIView
-from rest_framework.decorators import api_view
-from .serializers import *
-from .responses import *
-from .tasks import *
-from rest_framework import status
-from rest_framework import generics
-from rest_framework.parsers import MultiPartParser
-from WebDNA.util.oxDNA_util import *
 import shutil
-from webdna_server.celery import app
 
-# NOTE: It is best practice to keep all validation (field, class, etc.) in serializers.py
-# A view should ideally call serializer validation and return responses based on the validation result
-# Refer to .register for an example of a good view definition
-# Refer to RegistrationSerializer in serializers.py and User in models.py
-# for an example of how to implement custom and default field validation for objects
+from django.http import HttpResponse
+from rest_framework import generics
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.parsers import MultiPartParser
+from rest_framework.views import APIView
+
+import webdna.tasks as tasks
+import webdna.util.file as file_util
+import webdna.util.project as project_util
+import webdna.util.server as server
+from webdna.defaults import ProjectFile
+from webdna_django_server.celery import app
+from .responses import *
+from .serializers import *
 
 
 # /api/users
 class UserView(APIView):
 
-    def get(self, request):
+    def get(self):
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
         return ObjectResponse.make(obj=serializer.data)
@@ -36,7 +35,7 @@ class FileUploadView(APIView):
         project_id = request.data['id']
         file_name = request.data['type']  # Any kind of file in project to edit
 
-        new_file_path = os.path.join('server-data', 'server-projects', str(project_id), str(file_name))
+        new_file_path = server.get_project_file(project_id, file_name)
 
         if os.path.isfile(new_file_path):
             os.remove(new_file_path)
@@ -61,15 +60,15 @@ class ScriptUploadView(APIView):
             user_id = serialized_body.validated_data['user']
             script_name = serialized_body.validated_data['file_name']
 
-            new_script_path = os.path.join('server-data', 'server-users', str(user_id), 'scripts', str(script_name))
+            new_script_file_path = server.get_user_script(user_id, script_name)
 
-            if os.path.isfile(new_script_path):
-                os.remove(new_script_path)
+            if os.path.isfile(new_script_file_path):
+                os.remove(new_script_file_path)
 
-            new_script = open(file=new_script_path, mode='wb')
+            new_script_file = open(file=new_script_file_path, mode='wb')
             for line in file_obj.readlines():
-                new_script.write(line)
-            new_script.close()
+                new_script_file.write(line)
+            new_script_file.close()
 
             serialized_body.create(serialized_body.validated_data)
             return ErrorResponse.make(status=status.HTTP_204_NO_CONTENT)
@@ -83,8 +82,11 @@ class ProjectList(generics.CreateAPIView, generics.ListAPIView):
 
     def post(self, request, *args, **kwargs):
         response = generics.CreateAPIView.post(self, request, args, kwargs)
-        fetched_project = Project.objects.all().filter(id=response.data['id'])
-        os.makedirs(os.path.join('server-data', 'server-projects', str(fetched_project[0].id), 'analysis'))
+        fetched_projects = Project.objects.all().filter(id=response.data['id'])
+        project_id = fetched_projects[0].id
+
+        project_folder_path = server.get_analysis_folder_path(project_id)
+        os.makedirs(project_folder_path, exist_ok=True)
         return ObjectResponse.make(response=response)
 
     def get(self, request, *args, **kwargs):
@@ -124,17 +126,15 @@ class ProjectView(generics.RetrieveUpdateDestroyAPIView):
         if not project:
             return ErrorResponse.make(message=PROJECT_NOT_FOUND)
 
-        path = os.path.join('server-data', 'server-projects', kwargs['id'])
-        jobs = Job.objects.filter(project_id=kwargs['id'])
+        project_id = kwargs['id']
+        project_folder_path = server.get_project_folder_path(project_id)
+        jobs = Job.objects.filter(project_id=project_id)
 
         for j in jobs:
             if j.finish_time is None:
                 app.control.revoke(j.process_name, terminate=True)
 
-        try:
-            shutil.rmtree(path)
-        except:
-            pass
+        shutil.rmtree(project_folder_path, ignore_errors=True)
 
         response = generics.RetrieveUpdateDestroyAPIView.delete(self, request, args, kwargs)
         return ObjectResponse.make(response=response)
@@ -157,7 +157,9 @@ def register(request):
     serialized_body = RegistrationSerializer(data=request.data)
     if serialized_body.is_valid():
         user_serializer = UserSerializer(instance=serialized_body.save())
-        os.makedirs(os.path.join('server-data', 'server-users', str(user_serializer.data['id'], 'scripts')))
+        user_id = str(user_serializer.data['id'])
+        scripts_folder_path = server.get_user_scripts_folder_path(user_id)
+        os.makedirs(scripts_folder_path, exist_ok=True)
         return RegistrationResponse.make(user_serializer.data)
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
@@ -176,14 +178,14 @@ def execute(request):
         should_regenerate = serialized_body.validated_data['should_regenerate']
         fetched_project = Project.objects.all().filter(id=project_id)
         user_id = fetched_project[0].user_id
-        path = os.path.join('server-data', 'server-projects', str(project_id))
+        project_folder_path = server.get_project_folder_path(project_id)
 
-        input_file = os.path.join(path, 'input.txt')
-        sequence_file = os.path.join(path, 'sequence.txt')
-        generated_dat = os.path.join(path, 'generated.dat')
-        generated_top = os.path.join(path, 'generated.top')
+        input_file = server.get_project_file(project_id, ProjectFile.INPUT)
+        sequence_file = server.get_project_file(project_id, ProjectFile.SEQUENCE)
+        generated_dat = server.get_project_file(project_id, ProjectFile.GENERATED_DAT)
+        generated_top = server.get_project_file(project_id, ProjectFile.GENERATED_TOP)
 
-        if os.path.isdir(path):
+        if os.path.isdir(project_folder_path):
             is_project_executable = False
 
             if should_regenerate and os.path.isfile(sequence_file):
@@ -196,7 +198,7 @@ def execute(request):
                 is_project_executable = False
 
             if is_project_executable:
-                execute_sim.delay(job.id, job.project_id, user_id, path, should_regenerate)
+                tasks.execute_sim.delay(job.id, job.project_id, user_id, should_regenerate)
                 return ExecutionResponse.make()
             else:
                 return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -210,13 +212,7 @@ def execute(request):
 def check_running(request):
     serialized_body = CheckStatusSerializer(data=request.query_params)
     if serialized_body.is_valid():
-        project_id = serialized_body.validated_data['project_id']
-        path = os.path.join('server-data', 'server-projects', str(project_id))
-        running = True
-
-        if serialized_body.fetched_job.finish_time is not None:
-            running = False
-
+        running = serialized_body.fetched_job.finish_time is None
         response_data = {'running': running}
         return ObjectResponse.make(response_data)
     else:
@@ -230,23 +226,17 @@ def check_status(request):
     serialized_body = CheckStatusSerializer(data=request.data)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
-        path = os.path.join('server-data', 'server-projects', str(project_id))
-        running = True
+        running = serialized_body.fetched_job.finish_time is None
 
-        if serialized_body.fetched_job.finish_time is not None:
-            running = False
-
-        stdout_file = os.path.join(path, 'stdout.log')
+        stdout_file = server.get_project_file(project_id, ProjectFile.STDOUT)
         if os.path.isfile(stdout_file):
-            with open(stdout_file, 'r') as log:
-                stdout_string = log.read()
+            stdout_string = file_util.get_file_contents_as_string(stdout_file)
         else:
             stdout_string = ''
 
-        log_file = os.path.join(path, 'log.dat')
+        log_file = server.get_project_file(project_id, ProjectFile.LOG_DAT)
         if os.path.isfile(log_file):
-            with open(log_file, 'r') as logdatfile:
-                log_string = logdatfile.read()
+            log_string = file_util.get_file_contents_as_string(log_file)
         else:
             log_string = ''
 
@@ -263,7 +253,7 @@ def set_project_settings(request):
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
 
-        input_file_status = generate_input_file(project_id, serialized_body.validated_data)
+        input_file_status = file_util.generate_input_file(project_id, serialized_body.validated_data)
         if input_file_status == MISSING_PROJECT_FILES:
             return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
 
@@ -279,7 +269,7 @@ def get_project_settings(request):
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
 
-        input_data = get_input_file_as_serializer_data(project_id)
+        input_data = file_util.parse_input_file(project_id)
         if input_data == MISSING_PROJECT_FILES:
             return ErrorResponse.make(status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
 
@@ -295,8 +285,8 @@ def get_project_file(request):
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
         file_name = serialized_body.validated_data['file_name']
-        file_path = os.path.join('server-data', 'server-projects', str(project_id), str(file_name))
-        return get_file_string(file_path)
+        file_path = server.get_project_file(project_id, file_name)
+        return file_util.get_file_contents_as_string(file_path)
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
 
@@ -307,18 +297,16 @@ def fetch_traj(request):
     serialized_body = GetPDBSerializer(data=request.query_params)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
-        path = os.path.join('server-data', 'server-projects', str(project_id))
 
         if serialized_body.fetched_job.finish_time is None:
-            trajectory_file = os.path.join(path, 'trajectory.dat')
-            topology_file = os.path.join(path, 'generated.top')
-            if os.path.isfile(trajectory_file) and os.path.isfile(topology_file):
-                generate_sim_files(path, str(project_id))
+            trajectory_file = server.get_project_file(project_id, ProjectFile.TRAJECTORY_DAT)
+            top_file = server.get_project_file(project_id, ProjectFile.GENERATED_TOP)
+            if os.path.isfile(trajectory_file) and os.path.isfile(top_file):
+                project_util.generate_sim_files(project_id)
             else:
                 return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return DefaultResponse.make()
-
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
 
@@ -329,143 +317,16 @@ def project_zip(request):
     serialized_body = ProjectExistenceSerializer(data=request.data)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
-        project_path = os.path.join('server-data', 'server-projects', str(project_id))
-        zip_project(project_path)
-        with open(os.path.join(project_path, 'project.zip'), 'rb') as archive_file:
+
+        project_util.zip_project(project_id)
+        project_zip_file_path = server.get_project_file(project_id, ProjectFile.PROJECT_ZIP)
+        with open(project_zip_file_path, 'rb') as archive_file:
             response = HttpResponse(archive_file, content_type='application/zip')
             response['Content-Disposition'] = 'attachment; filename="project.zip"'
             archive_file.close()
         return response
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
-
-# /api/file/download
-@api_view(['GET'])
-def download_project_file(request, path):
-    # assumes path is a path in "server-data/server-projects/{project_id}"
-    serialized_body = ProjectExistenceSerializer(data=request.data)
-    if serialized_body.is_valid():
-        project_id = serialized_body.validated_data['project_id']
-        file_path = os.path.join('server-data', 'server-projects', str(project_id), path)
-        if os.path.isfile(file_path):
-            with open(file_path, 'rb') as file:
-                response = HttpResponse(file.read(), content_type="application/file")
-                response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(file_path)
-                file.close()
-            return response
-        else:
-            return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
-    else:
-        return ErrorResponse.make(errors=serialized_body.errors)
-
-
-# /api/script/getscriptlist
-@api_view(['GET'])
-def get_script_list(request):
-    # gets all the usuable scripts
-    path = os.path.join(os.getcwd(), 'oxDNA', 'UTILS')
-
-    dir_list = os.listdir(path)
-    for item in list(dir_list):
-        if item[-3:] != '.py':
-            dir_list.remove(item)
-
-    response_data = {'scripts': dir_list}
-    return ObjectResponse.make(obj=response_data)
-
-
-# /api/script/getcustomlist
-@api_view(['GET'])
-def get_custom_script_list(request):
-    # assumes "server-data/server-projects/{project_id}/analysis" is the CWD for script execution
-    serialized_body = UserScriptSerializer(data=request.data)
-    if serialized_body.is_valid():
-        user_id = serialized_body.validated_data['user_id']
-        path_to_scripts = os.path.join('server-users', str(user_id), 'scripts')
-        path = os.path(os.getcwd(), 'server-data', path_to_scripts)
-        dir_list = os.listdir(path)
-
-        dir_list_len = len(dir_list)
-        path_from_analysis = os.path.join('..', '..', '..', path_to_scripts)
-        for i in range(0, dir_list_len):
-            dir_list[i] = os.path.join(path_from_analysis, dir_list[i])
-
-        response_data = {'custom_scripts': dir_list}
-        return ObjectResponse.make(obj=response_data)
-    else:
-        return ErrorResponse.make(errors=serialized_body.errors)
-
-
-# /api/script/getinputlist
-@api_view(['GET'])
-def get_input_list(request):
-    # assumes "server-data/server-projects/{project_id}/analysis" is the CWD for script execution
-    # names input variable files as ../{path_in_project_id}/{file_name} or {path_in_analysis}/{filename}
-    serialized_body = ProjectExistenceSerializer(data=request.data)
-    if serialized_body.is_valid():
-        project_id = serialized_body.validated_data['project_id']
-        project_path = os.path.join(os.getcwd(), 'server-data', 'server-projects', str(project_id))
-        analysis_path = os.path.join(project_path, 'analysis')
-        dir_list = []
-        for (dir_path, dir_names, file_names) in os.walk(project_path):
-            if 'analysis' in dir_path:  # analysis output files folder
-                path_from_analysis = dir_path.replace(analysis_path, '')
-                if path_from_analysis[0] == os.path.sep:
-                    path_from_analysis = path_from_analysis[1:]
-            else:
-                # path_from_analysis = "../{path_in_project_id}" or simply ".."
-                path_from_analysis = dir_path.replace(project_path, '')
-                path_from_analysis = '..' + path_from_analysis
-
-            # ../{path_in_project_id}/{file_name} or {path_in_analysis}/{filename}
-            file_names_len = len(file_names)
-            for i in range(0, file_names_len):
-                file_names[i] = os.path.join(path_from_analysis, file_names[i])
-            # concat file_names
-            dir_list.extend(file_names)
-
-        response_data = {'inputs': dir_list}
-        return ObjectResponse.make(obj=response_data)
-    else:
-        return ErrorResponse.make(errors=serialized_body.errors)
-
-
-# /api/script/getoutputlist
-@api_view(['GET'])
-def get_output_list(request):
-    # to download from project folder "analysis/{output_file}"
-    serialized_body = ProjectExistenceSerializer(data=request.data)
-    if serialized_body.is_valid():
-        project_id = serialized_body.validated_data['project_id']
-        path = os.path(os.getcwd(), 'server-data', 'server-projects', str(project_id), 'analysis')
-
-        dir_list = os.listdir(path)
-        dir_list_len = len(dir_list)
-        for i in range(0, dir_list_len):
-            dir_list[i] = os.path.join('analysis', dir_list[i])
-
-        response_data = {'outputs': dir_list}
-        return ObjectResponse.make(obj=response_data)
-    else:
-        return ErrorResponse.make(errors=serialized_body.errors)
-
-
-@api_view(['GET'])
-def get_user_output(request):
-    serialized_body = UserOutputRequestSerializer(data=request.query_params)
-    if serialized_body.is_valid():
-        project_id = serialized_body.validated_data['id']
-        file_path = os.path.join('server-data', 'server-projects', str(project_id), 'analysis', 'output.txt')
-        if os.path.isfile(file_path):
-            with open(file_path, 'rb') as output_file:
-                response = HttpResponse(output_file, content_type='text/plain')
-                response['Content-Disposition'] = 'attachment; filename="output.txt"'
-            return response
-        else:
-            return ErrorResponse.make(status=status.HTTP_404_NOT_FOUND,
-                                      message='output.txt does not exist for given project')
-    else:
-        return ErrorResponse.make(status=status.HTTP_400_BAD_REQUEST, message=PROJECT_NOT_FOUND)
 
 
 @api_view(['GET'])
@@ -503,10 +364,10 @@ def set_scriptchain(request):
     serialized_body = ScriptChainSerializer(data=request.data)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
-        file_path = os.path.join('server-data', 'server-projects', str(project_id), 'scriptchain.txt')
+        script_chain_file_path = server.get_project_file(project_id, ProjectFile.SCRIPT_CHAIN)
         script_list = serialized_body.validated_data['script_list']
 
-        with open(file_path, 'w') as script_chain:
+        with open(script_chain_file_path, 'w') as script_chain:
             script_chain.write(script_list)
 
         return DefaultResponse.make()
@@ -520,9 +381,8 @@ def run_analysis_scripts(request):
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
         user_id = serialized_body.fetched_project.user_id
-        path = os.path.join('server-data', 'server-projects', str(project_id))
 
-        execute_output_analysis.delay(project_id, user_id, path)
+        tasks.execute_output_analysis.delay(project_id, user_id)
         return DefaultResponse.make()
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
@@ -543,8 +403,8 @@ def fetch_script_chain(request):
     serialized_body = ScriptChainRequestSerializer(data=request.query_params)
     if serialized_body.is_valid():
         project_id = str(serialized_body.project_id)
-        file_path = os.path.join('server-data', 'server-projects', project_id, 'scriptchain.txt')
-        with open(file_path, 'rb') as script_chain:
+        script_chain_file_path = server.get_project_file(project_id, ProjectFile.SCRIPT_CHAIN)
+        with open(script_chain_file_path, 'rb') as script_chain:
             response = script_chain.readlines()
 
         return ObjectResponse.make(obj=response)

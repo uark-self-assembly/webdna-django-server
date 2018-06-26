@@ -1,6 +1,6 @@
 from rest_framework.response import Response
 from rest_framework import status as http_status
-from .util.jwt_util import *
+from .util.jwt import *
 
 
 class ErrorResponse:

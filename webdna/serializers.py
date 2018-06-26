@@ -1,11 +1,13 @@
+import re
+import os
+import random
+
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from .models import *
 from django.contrib.auth.hashers import make_password, check_password
+
+from .models import *
 from .messages import *
-import re
-import random
-import os
 
 
 class UserOutputRequestSerializer(serializers.Serializer):
