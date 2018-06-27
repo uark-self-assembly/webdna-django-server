@@ -5,7 +5,7 @@ from django.db import migrations
 
 def add_initial_data(apps, schema_editor):
 
-    User = apps.get_model('WebDNA', 'User')
+    User = apps.get_model('webdna', 'User')
     user = User.objects.create(
         username='jjmcpher',
         email='jjmcpher@uark.edu',
@@ -15,7 +15,7 @@ def add_initial_data(apps, schema_editor):
     )
     user.save()
 
-    Project = apps.get_model('WebDNA', 'Project')
+    Project = apps.get_model('webdna', 'Project')
     project = Project.objects.create(
         user=user,
         name='Project 1'
@@ -26,7 +26,7 @@ def add_initial_data(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('WebDNA', '0001_initial'),
+        ('webdna', '0001_initial'),
     ]
 
     operations = [
