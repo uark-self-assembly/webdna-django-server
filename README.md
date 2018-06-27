@@ -7,66 +7,98 @@ WebDNA is a user-centric software designed around the [oxDNA](https://dna.physic
 ## For the Developers
 You should adjust your environment according to below:
 1. Add oxDNA/UTILS and oxDNA/build/bin to PATH:
-<br>&emsp;Add export PATH="/usr/local/bin/oxDNA/build/bin:/usr/local/bin/oxDNA/UTILS:$PATH" to ~/.profile
-2. Run "chmod +wx *.py" in UTILS directory
-3. Also run "sed -i '1i #!/usr/bin/env python2' *.py" in UTILS directory
+    - Add `export PATH="/usr/local/bin/oxDNA/build/bin:/usr/local/bin/oxDNA/UTILS:$PATH"` to ~/.profile
+2. Run `chmod +wx *.py` in UTILS directory
+3. Also run `sed -i '1i #!/usr/bin/env python2' *.py` in the UTILS directory
 
 We'll outline here what all is needed to get this server up and running on your machine.
-There are two main components (so far):<br>
+There are two main components (so far):
+
 1. A PostgreSQL database server
 2. This Django API
 
 We'll set these things up in that order!
 
 ### PostgreSQL Database Server
-1. First, install the PostgreSQL DB server on your machine. Depending on your machine, follow the instructions here to install <b>version 9.5 or 9.6</b>:
+
+First, install the PostgreSQL DB server on your machine. Depending on your machine, follow the instructions here to install the database server:
   * [macOS](https://www.codementor.io/engineerapart/getting-started-with-postgresql-on-mac-osx-are8jcopb)
   * [Windows](https://www.postgresql.org/download/windows/)
-2. When you install PostgreSQL, make sure to create a database called "webdna" by running the following commands as a superuser in the psql prompt:<br>
-```
+
+When you install PostgreSQL, make sure to create a database called "webdna" by running the following commands as a superuser in the psql prompt:
+
+```sql
 CREATE DATABASE webdna;
 ```
-3. We will then create a "schema" to keep all of our WebDNA tables organized. Run:<br>
-```
+
+We will then create a "schema" to keep all of our WebDNA tables organized. Run:
+
+```sql
 CREATE SCHEMA webdna;
 ```
-4. Now, run the following command to support UUIDs on this database:<br>
-```
+
+Now, run the following command to support UUIDs on this database:
+
+```sql
 CREATE EXTENSION "uuid-ossp";
 ```
-5. Create a role (i.e. a "user") on your PSQL database called "django_server" by running the following command as a superuser in the psql prompt:<br>
+
+Create a role (i.e. a "user") on your PSQL database called "django_server" by running the following command as a superuser in the psql prompt:
+
+```sql
+CREATE ROLE django_server WITH SUPERUSER LOGIN PASSWORD 'dJAngO#SerVe!!!Pa$#!1*';
 ```
-CREATE ROLE django_server WITH LOGIN PASSWORD 'dJAngO#SerVe!!!Pa$#!1*';
+
+After that, run the following command to make this user owner of the  `webdna` database.
+
+```sql
+ALTER DATABASE webdna OWNER TO django_server;
 ```
-After that, run the following command to grant this user permissions to modify databases<br>
+
+Grant ownership of the webdna schema to the django_server user
+
+```sql
+ALTER SCHEMA webdna OWNER TO django_server;
 ```
-GRANT ALL PRIVILEGES ON DATABASE webdna TO django_server;
+
+Finally, we need to perform the **database migrations**. In the project directory, run the following command:
+
+```bash
+python3 manage.py migrate
 ```
-Finally, grant usage of the webdna schema to the django_server user<br>
-```
-GRANT USAGE ON SCHEMA webdna TO django_server;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA webdna TO django_server;
-```
-6. Refer to the database definitions in the [WebDNA Database Definitions Repository](https://gitlab.com/webdna/database-definition).
-  You'll need to run the commands in those database definition files in the database according to the README in that repository. Continue with the steps here once you've done that.
+
+If you see a bunch of `OK` messages, then you're done! The database is all set up.
 
 ### Django API
-Well, to be honest, PostgreSQL was the hard part, because everybody has a different machine, but this is a bit easier. First, make sure you've got PyCharm Professional installed. If not, you can definitely still run this Python project, but for our team, we're sticking to an IDE that makes the development process a breeze.
+Well, to be honest, PostgreSQL was the hard part because everybody has a different machine, but this is a bit easier. First, make sure you've got PyCharm Professional installed. If not, you can definitely still run this Python project, but for our team, we're sticking to an IDE that makes the development process a breeze.
 
-1. Clone this repository to a conveniently located directory on your machine.
-2. Open up PyCharm, click "Open Project", and open the cloned directory.
-3. Pull up the Settings window: "File > Configure > Settings".
-4. Go to the "Project: webdna_server" tab, then click "Project Interpreter".
-5. If you don't have a project interpreter selected at the top, go ahead and select the Python interpreter on your system.
-6. Click the green "+" button and search for/install the following packages:
-  * Django
-  * djangorestframework
-  * psycopg2
-7. Create a new configuration by clicking the "Configurations" drop-down in the top right.
+We recommend using a virtual environment. If you want to do this, simply run the setup script in this repo.
+
+```bash
+./venv_setup.sh
+```
+
+Otherwise, you just need tomake sure you have all the Python dependencies installed. Run the following if you didn't do the above:
+
+```bash
+pip3 install -r requirements.txt
+```
+
+To make it easier to quickly run the server from within PyCharm, 
+create a new configuration by clicking the "Configurations" drop-down in the top right of the PyCharm window.
   * In the configuration window, click the "+" on the far left and select "Django server".
   * Then, change the "Host" to "localhost". I would also name the configuration something pretty, like "Run Server".
-8. All set! You should be able to click the big green "Run" button at the top right. Run a sample command in [Postman](https://www.getpostman.com/):
 
-<img src="https://i.imgur.com/UEM00Kd.png" alt="Postman Example" style="width: 600px;" align="middle"/>
+If you'd rather run it from command line, just run the following:
 
-<br><br>
+```bash
+python3 manage.py runserver localhost:8000
+```
+
+### Celery
+
+This one is even easier. Celery is the server that handles executing jobs, but the server code is integrated with the Django code. To run the Celery server, just run the following:
+
+```bash
+./run_celery.sh
+```
