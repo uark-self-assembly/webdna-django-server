@@ -11,7 +11,7 @@ import webdna.tasks as tasks
 import webdna.util.file as file_util
 import webdna.util.project as project_util
 import webdna.util.server as server
-from webdna.defaults import ProjectFile
+from webdna.defaults import ProjectFile, AnalysisFile
 from webdna_django_server.celery import app
 from .responses import *
 from .serializers import *
@@ -20,7 +20,7 @@ from .serializers import *
 # /api/users
 class UserView(APIView):
 
-    def get(self):
+    def get(self, request):
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
         return ObjectResponse.make(obj=serializer.data)
@@ -222,7 +222,7 @@ def check_running(request):
 
 # /api/checkstatus
 @api_view(['POST'])
-def check_status(request):
+def check_output(request):
     serialized_body = CheckStatusSerializer(data=request.data)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
@@ -334,7 +334,8 @@ def get_user_log(request):
     serialized_body = UserOutputRequestSerializer(data=request.query_params)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
-        file_path = os.path.join('server-data', 'server-projects', str(project_id), 'analysis', 'analysis.log')
+        file_path = server.get_analysis_file_path(project_id, AnalysisFile.LOG)
+
         if os.path.isfile(file_path):
             with open(file_path, 'rb') as output_file:
                 response = output_file.readlines()
