@@ -11,22 +11,12 @@ import webdna.tasks as tasks
 import webdna.util.file as file_util
 import webdna.util.project as project_util
 import webdna.util.server as server
-from webdna.defaults import ProjectFile, AnalysisFile
+from webdna.defaults import ProjectFile
 from webdna_django_server.celery import app
-from .responses import *
-from .serializers import *
+from ..responses import *
+from ..serializers import *
 
 
-# /api/users
-class UserView(APIView):
-
-    def get(self, request):
-        users = User.objects.all()
-        serializer = UserSerializer(users, many=True)
-        return ObjectResponse.make(obj=serializer.data)
-
-
-# /api/file/upload
 class FileUploadView(APIView):
     parser_classes = (MultiPartParser,)
 
@@ -48,34 +38,6 @@ class FileUploadView(APIView):
         return ErrorResponse.make(status=status.HTTP_204_NO_CONTENT)
 
 
-# api/scripts/upload
-class ScriptUploadView(APIView):
-    parser_classes = (MultiPartParser,)
-
-    # update to add script file to Script table
-    def put(self, request):
-        serialized_body = ScriptUploadSerializer(data=request.data)
-        if serialized_body.is_valid():
-            file_obj = serialized_body.validated_data['file']
-            user_id = serialized_body.validated_data['user']
-            script_name = serialized_body.validated_data['file_name']
-
-            new_script_file_path = server.get_user_script(user_id, script_name)
-
-            if os.path.isfile(new_script_file_path):
-                os.remove(new_script_file_path)
-
-            new_script_file = open(file=new_script_file_path, mode='wb')
-            for line in file_obj.readlines():
-                new_script_file.write(line)
-            new_script_file.close()
-
-            serialized_body.create(serialized_body.validated_data)
-            return ErrorResponse.make(status=status.HTTP_204_NO_CONTENT)
-        else:
-            return ErrorResponse.make(errors=serialized_body.errors)
-
-
 class ProjectList(generics.CreateAPIView, generics.ListAPIView):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
@@ -94,19 +56,6 @@ class ProjectList(generics.CreateAPIView, generics.ListAPIView):
         return ObjectResponse.make(response=response)
 
 
-class ScriptList(generics.CreateAPIView, generics.ListAPIView):
-        queryset = Script.objects.all()
-        serializer_class = ScriptSerializer
-
-        def post(self, request, *args, **kwargs):
-            pass
-
-        def get(self, request, *args, **kwargs):
-            response = generics.ListAPIView.get(self, request, args, kwargs)
-            return ObjectResponse.make(response=response)
-
-
-# /api/projects
 class ProjectView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'id'
     queryset = Project.objects.all()
@@ -140,32 +89,6 @@ class ProjectView(generics.RetrieveUpdateDestroyAPIView):
         return ObjectResponse.make(response=response)
 
 
-# /api/login
-@api_view(['POST'])
-def login(request):
-    serialized_body = LoginSerializer(data=request.data)
-    if serialized_body.is_valid():
-        user_serializer = UserSerializer(instance=serialized_body.fetched_user)
-        return AuthenticationResponse.make(user_serializer.data)
-    else:
-        return ErrorResponse.make(status=status.HTTP_400_BAD_REQUEST, errors=serialized_body.errors)
-
-
-# /api/register
-@api_view(['POST'])
-def register(request):
-    serialized_body = RegistrationSerializer(data=request.data)
-    if serialized_body.is_valid():
-        user_serializer = UserSerializer(instance=serialized_body.save())
-        user_id = str(user_serializer.data['id'])
-        scripts_folder_path = server.get_user_scripts_folder_path(user_id)
-        os.makedirs(scripts_folder_path, exist_ok=True)
-        return RegistrationResponse.make(user_serializer.data)
-    else:
-        return ErrorResponse.make(errors=serialized_body.errors)
-
-
-# /api/execute
 @api_view(['POST'])
 def execute(request):
     serialized_body = ExecutionSerializer(data=request.data)
@@ -220,7 +143,6 @@ def check_running(request):
         return ObjectResponse.make(response_data)
 
 
-# /api/checkstatus
 @api_view(['POST'])
 def check_output(request):
     serialized_body = CheckStatusSerializer(data=request.data)
@@ -246,7 +168,6 @@ def check_output(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
-# /api/applysettings
 @api_view(['POST'])
 def set_project_settings(request):
     serialized_body = ProjectSettingsSerializer(data=request.data)
@@ -262,7 +183,6 @@ def set_project_settings(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
-# /api/getsettings
 @api_view(['POST'])
 def get_project_settings(request):
     serialized_body = ProjectExistenceSerializer(data=request.data)
@@ -291,7 +211,6 @@ def get_project_file(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
-# /api/trajectory
 @api_view(['GET'])
 def fetch_traj(request):
     serialized_body = GetPDBSerializer(data=request.query_params)
@@ -311,7 +230,6 @@ def fetch_traj(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
-# /api/projects/zipdownload
 @api_view(['GET'])
 def project_zip(request):
     serialized_body = ProjectExistenceSerializer(data=request.data)
@@ -329,25 +247,6 @@ def project_zip(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
-@api_view(['GET'])
-def get_user_log(request):
-    serialized_body = UserOutputRequestSerializer(data=request.query_params)
-    if serialized_body.is_valid():
-        project_id = serialized_body.validated_data['project_id']
-        file_path = server.get_analysis_file_path(project_id, AnalysisFile.LOG)
-
-        if os.path.isfile(file_path):
-            with open(file_path, 'rb') as output_file:
-                response = output_file.readlines()
-
-            return ObjectResponse.make(obj=response)
-        else:
-            return ErrorResponse.make(status=status.HTTP_404_NOT_FOUND,
-                                      message='analysis.log does not exist for given project')
-    else:
-        return ErrorResponse.make(status=status.HTTP_400_BAD_REQUEST, message=PROJECT_NOT_FOUND)
-
-
 @api_view(['POST'])
 def stop_execution(request):
     serialized_body = TerminateSerializer(data=request.data)
@@ -356,58 +255,5 @@ def stop_execution(request):
         app.control.revoke(job.process_name, terminate=True)
         job.delete()
         return DefaultResponse.make()
-    else:
-        return ErrorResponse.make(errors=serialized_body.errors)
-
-
-@api_view(['POST'])
-def set_scriptchain(request):
-    serialized_body = ScriptChainSerializer(data=request.data)
-    if serialized_body.is_valid():
-        project_id = serialized_body.validated_data['project_id']
-        script_chain_file_path = server.get_project_file(project_id, ProjectFile.SCRIPT_CHAIN)
-        script_list = serialized_body.validated_data['script_list']
-
-        with open(script_chain_file_path, 'w') as script_chain:
-            script_chain.write(script_list)
-
-        return DefaultResponse.make()
-    else:
-        return ErrorResponse.make(errors=serialized_body.errors)
-
-
-@api_view(['POST'])
-def run_analysis_scripts(request):
-    serialized_body = RunAnalysisSerializer(data=request.data)
-    if serialized_body.is_valid():
-        project_id = serialized_body.validated_data['project_id']
-        user_id = serialized_body.fetched_project.user_id
-
-        tasks.execute_output_analysis.delay(project_id, user_id)
-        return DefaultResponse.make()
-    else:
-        return ErrorResponse.make(errors=serialized_body.errors)
-
-
-@api_view(['DELETE'])
-def delete_script(request):
-    serialized_body = ScriptDeleteSerializer(data=request.query_params)
-    if serialized_body.is_valid():
-        serialized_body.fetched_script.delete()
-        return DefaultResponse.make()
-    else:
-        return ErrorResponse.make(errors=serialized_body.errors)
-
-
-@api_view(['GET'])
-def fetch_script_chain(request):
-    serialized_body = ScriptChainRequestSerializer(data=request.query_params)
-    if serialized_body.is_valid():
-        project_id = str(serialized_body.project_id)
-        script_chain_file_path = server.get_project_file(project_id, ProjectFile.SCRIPT_CHAIN)
-        with open(script_chain_file_path, 'rb') as script_chain:
-            response = script_chain.readlines()
-
-        return ObjectResponse.make(obj=response)
     else:
         return ErrorResponse.make(errors=serialized_body.errors)

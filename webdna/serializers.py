@@ -137,6 +137,7 @@ class ScriptUploadSerializer(serializers.Serializer):
 
         return script_data
 
+
 class FileSerializer(ExecutionSerializer):
     file_name = serializers.CharField(max_length=128)
 

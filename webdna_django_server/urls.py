@@ -15,35 +15,35 @@ Including another URLconf
 """
 from django.conf.urls import url
 from rest_framework.urlpatterns import format_suffix_patterns
-from webdna import views
+from webdna.views import projects, scripts, users
 
 urlpatterns = [
-    url(r'^api/users/login/', views.login),
-    url(r'^api/users/register', views.register),
-    url(r'^api/users/', views.UserView.as_view()),
+    url(r'^api/users/login/', users.login),
+    url(r'^api/users/register', users.register),
+    url(r'^api/users/', users.UserView.as_view()),
 
-    url(r'^api/projects/$', views.ProjectList.as_view()),
-    url(r'^api/projects/?(?P<id>[^/]+)/$', views.ProjectView.as_view()),
+    url(r'^api/projects/$', projects.ProjectList.as_view()),
+    url(r'^api/projects/?(?P<id>[^/]+)/$', projects.ProjectView.as_view()),
 
-    url(r'^api/projects/simulation/execute', views.execute),
-    url(r'^api/projects/simulation/terminate', views.stop_execution),
-    url(r'^api/projects/current-output', views.check_output),
-    url(r'^api/projects/running-status', views.check_running),
-    url(r'^api/projects/settings/apply', views.set_project_settings),
-    url(r'^api/projects/settings/retrieve', views.get_project_settings),
-    url(r'^api/projects/trajectory', views.fetch_traj),
+    url(r'^api/projects/simulation/execute', projects.execute),
+    url(r'^api/projects/simulation/terminate', projects.stop_execution),
+    url(r'^api/projects/current-output', projects.check_output),
+    url(r'^api/projects/running-status', projects.check_running),
+    url(r'^api/projects/settings/apply', projects.set_project_settings),
+    url(r'^api/projects/settings/retrieve', projects.get_project_settings),
+    url(r'^api/projects/trajectory', projects.fetch_traj),
 
-    url(r'^api/projects/files/upload', views.FileUploadView.as_view()),
-    url(r'^api/projects/files/retrieve', views.get_project_file),
-    url(r'^api/projects/files/zip', views.project_zip),
+    url(r'^api/projects/files/upload', projects.FileUploadView.as_view()),
+    url(r'^api/projects/files/retrieve', projects.get_project_file),
+    url(r'^api/projects/files/zip', projects.project_zip),
 
-    url(r'^api/scripts/$', views.ScriptList.as_view()),
-    url(r'^api/scripts/upload', views.ScriptUploadView.as_view()),
-    url(r'^api/scripts/userlog', views.get_user_log),
-    url(r'^api/scripts/scriptchain/retrieve', views.fetch_script_chain),
-    url(r'^api/scripts/scriptchain/apply', views.set_scriptchain),
-    url(r'^api/scripts/execute-analysis', views.run_analysis_scripts),
-    url(r'^api/scripts/delete', views.delete_script)
+    url(r'^api/scripts/$', scripts.ScriptList.as_view()),
+    url(r'^api/scripts/upload', scripts.ScriptUploadView.as_view()),
+    url(r'^api/scripts/userlog', scripts.get_user_log),
+    url(r'^api/scripts/scriptchain/retrieve', scripts.fetch_script_chain),
+    url(r'^api/scripts/scriptchain/apply', scripts.set_scriptchain),
+    url(r'^api/scripts/execute-analysis', scripts.run_analysis_scripts),
+    url(r'^api/scripts/delete', scripts.delete_script)
 ]
 
 url_patterns = format_suffix_patterns(urlpatterns)
