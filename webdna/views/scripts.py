@@ -11,6 +11,8 @@ from ..responses import *
 from ..serializers import *
 
 
+# URL: /api/scripts/upload
+# Data: in request body
 class ScriptUploadView(APIView):
     parser_classes = (MultiPartParser,)
 
@@ -38,6 +40,8 @@ class ScriptUploadView(APIView):
             return ErrorResponse.make(errors=serialized_body.errors)
 
 
+# URL: /api/scripts
+# Data: None
 class ScriptList(generics.CreateAPIView, generics.ListAPIView):
     queryset = Script.objects.all()
     serializer_class = ScriptSerializer
@@ -50,6 +54,8 @@ class ScriptList(generics.CreateAPIView, generics.ListAPIView):
         return ObjectResponse.make(response=response)
 
 
+# URL: /api/scripts/userlog?project_id={project id}
+# Data: in URL
 @api_view(['GET'])
 def get_user_log(request):
     serialized_body = UserOutputRequestSerializer(data=request.query_params)
@@ -69,6 +75,8 @@ def get_user_log(request):
         return ErrorResponse.make(status=status.HTTP_400_BAD_REQUEST, message=PROJECT_NOT_FOUND)
 
 
+# URL: /api/scripts/scriptchain/apply
+# Data: in request body
 @api_view(['POST'])
 def set_scriptchain(request):
     serialized_body = ScriptChainSerializer(data=request.data)
@@ -85,6 +93,8 @@ def set_scriptchain(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
+# URL: /api/scripts/execute-analysis
+# Data: in request body
 @api_view(['POST'])
 def run_analysis_scripts(request):
     serialized_body = RunAnalysisSerializer(data=request.data)
@@ -98,6 +108,8 @@ def run_analysis_scripts(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
+# URL: /api/scripts/delete?script_id={script id}
+# Data: in URL
 @api_view(['DELETE'])
 def delete_script(request):
     serialized_body = ScriptDeleteSerializer(data=request.query_params)
@@ -108,6 +120,8 @@ def delete_script(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
+# URL: /api/scripts/scriptchain/retrieve?project_id={project_id}
+# Data: in URL
 @api_view(['GET'])
 def fetch_script_chain(request):
     serialized_body = ScriptChainRequestSerializer(data=request.query_params)

@@ -18,9 +18,9 @@ from rest_framework.urlpatterns import format_suffix_patterns
 from webdna.views import projects, scripts, users
 
 urlpatterns = [
-    url(r'^api/users/login/', users.login),
+    url(r'^api/users/login', users.login),
     url(r'^api/users/register', users.register),
-    url(r'^api/users/', users.UserView.as_view()),
+    url(r'^api/users', users.UserView.as_view()),
 
     url(r'^api/projects/$', projects.ProjectList.as_view()),
     url(r'^api/projects/?(?P<id>[^/]+)/$', projects.ProjectView.as_view()),
@@ -31,8 +31,8 @@ urlpatterns = [
     url(r'^api/projects/running-status', projects.check_running),
     url(r'^api/projects/settings/apply', projects.set_project_settings),
     url(r'^api/projects/settings/retrieve', projects.get_project_settings),
-    url(r'^api/projects/trajectory', projects.fetch_traj),
 
+    url(r'^api/projects/files/trajectory', projects.fetch_traj),
     url(r'^api/projects/files/upload', projects.FileUploadView.as_view()),
     url(r'^api/projects/files/retrieve', projects.get_project_file),
     url(r'^api/projects/files/zip', projects.project_zip),

@@ -17,6 +17,8 @@ from ..responses import *
 from ..serializers import *
 
 
+# URL: /api/projects/files/upload
+# Data: in request body
 class FileUploadView(APIView):
     parser_classes = (MultiPartParser,)
 
@@ -37,7 +39,8 @@ class FileUploadView(APIView):
 
         return ErrorResponse.make(status=status.HTTP_204_NO_CONTENT)
 
-
+# URL: /api/projects
+# Data: in request body
 class ProjectList(generics.CreateAPIView, generics.ListAPIView):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
@@ -55,7 +58,8 @@ class ProjectList(generics.CreateAPIView, generics.ListAPIView):
         response = generics.ListAPIView.get(self, request, args, kwargs)
         return ObjectResponse.make(response=response)
 
-
+# URL: /api/projects/{project id}
+# Data: in URL
 class ProjectView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'id'
     queryset = Project.objects.all()
@@ -89,6 +93,8 @@ class ProjectView(generics.RetrieveUpdateDestroyAPIView):
         return ObjectResponse.make(response=response)
 
 
+# /api/projects/simulation/execute
+# Data: in request body
 @api_view(['POST'])
 def execute(request):
     serialized_body = ExecutionSerializer(data=request.data)
@@ -131,6 +137,8 @@ def execute(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
+# URL: /api/projects/running-status?project_id={project id}
+# Data: in URL
 @api_view(['GET'])
 def check_running(request):
     serialized_body = CheckStatusSerializer(data=request.query_params)
@@ -143,6 +151,8 @@ def check_running(request):
         return ObjectResponse.make(response_data)
 
 
+# URL: /api/projects/current-output
+# Data: in request body
 @api_view(['POST'])
 def check_output(request):
     serialized_body = CheckStatusSerializer(data=request.data)
@@ -168,6 +178,8 @@ def check_output(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
+# URL: /api/projects/settings/apply
+# Data: in request body
 @api_view(['POST'])
 def set_project_settings(request):
     serialized_body = ProjectSettingsSerializer(data=request.data)
@@ -183,6 +195,8 @@ def set_project_settings(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
+# URL: /api/projects/settings/retrieve
+# Data: in request body
 @api_view(['POST'])
 def get_project_settings(request):
     serialized_body = ProjectExistenceSerializer(data=request.data)
@@ -198,10 +212,11 @@ def get_project_settings(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
-# /api/file/getprojectfile
+# URL: /api/projects/files/retrieve?project_id={project id}&should_regenerate={boolean}&file_name={filename}
+# Data: in URL
 @api_view(['GET'])
 def get_project_file(request):
-    serialized_body = FileSerializer(data=request.data)
+    serialized_body = FileSerializer(data=request.query_params)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
         file_name = serialized_body.validated_data['file_name']
@@ -211,6 +226,8 @@ def get_project_file(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
+# URL: /api/projects/files/trajectory?project_id={project_id}
+# Data: in URL
 @api_view(['GET'])
 def fetch_traj(request):
     serialized_body = GetPDBSerializer(data=request.query_params)
@@ -230,9 +247,11 @@ def fetch_traj(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
+# URL: /api/projects/files/zip?project_id={project id}
+# Data: in URL
 @api_view(['GET'])
 def project_zip(request):
-    serialized_body = ProjectExistenceSerializer(data=request.data)
+    serialized_body = ProjectExistenceSerializer(data=request.query_params)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
 
@@ -247,6 +266,8 @@ def project_zip(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
+# URL: /api/projects/simulation/terminate
+# Data: in request body
 @api_view(['POST'])
 def stop_execution(request):
     serialized_body = TerminateSerializer(data=request.data)

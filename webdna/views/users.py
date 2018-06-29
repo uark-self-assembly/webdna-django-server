@@ -7,13 +7,17 @@ from ..responses import *
 from ..serializers import *
 
 
+# URL: /api/users/
+# Data: None
 class UserView(APIView):
-    def get(self):
+    def get(self, request):
         users = User.objects.all()
         serializer = UserSerializer(users, many=True)
         return ObjectResponse.make(obj=serializer.data)
 
 
+# URL: /api/users/login
+# Data: in request body
 @api_view(['POST'])
 def login(request):
     serialized_body = LoginSerializer(data=request.data)
@@ -24,6 +28,8 @@ def login(request):
         return ErrorResponse.make(status=status.HTTP_400_BAD_REQUEST, errors=serialized_body.errors)
 
 
+# URL: /api/users/register
+# Data: in request body
 @api_view(['POST'])
 def register(request):
     serialized_body = RegistrationSerializer(data=request.data)
