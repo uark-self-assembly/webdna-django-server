@@ -13,6 +13,7 @@ import webdna.util.server as server
 import webdna.util.project as project_util
 import webdna.util.file as file_util
 from webdna.defaults import ProjectFile, AnalysisFile
+from datetime import timedelta
 
 
 @app.task()
@@ -31,6 +32,8 @@ def generate_topology_from_sequence_file(project_id, box_size, log_file_path):
 @app.task()
 def execute_sim(job_id, project_id, user_id, should_regenerate, fresh_execution=True):
     job = Job(id=job_id, process_name=execute_sim.request.id, finish_time=None)
+    start_time = job.start_time
+    time_d = timedelta()
     job.save(update_fields=['process_name', 'finish_time'])
 
     # Clean the previous execution files
@@ -54,6 +57,10 @@ def execute_sim(job_id, project_id, user_id, should_regenerate, fresh_execution=
     process.wait()
 
     stdout_log_file.close()
+
+    time_d = timezone.now() - start_time
+    project = Project(id=project_id, sim_time=time_d)
+    project.save(update_fields=['sim_time'])
 
     print("Simulation completed, generating pdb file for project: " + project_id)
 
