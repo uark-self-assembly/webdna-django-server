@@ -1,6 +1,8 @@
 import shutil
+from distutils.dir_util import copy_tree
 
 from django.http import HttpResponse
+from django.core import serializers as coreSerializer
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -39,6 +41,7 @@ class FileUploadView(APIView):
 
         return ErrorResponse.make(status=status.HTTP_204_NO_CONTENT)
 
+
 # URL: /api/projects
 # Data: in request body
 class ProjectList(generics.CreateAPIView, generics.ListAPIView):
@@ -57,6 +60,7 @@ class ProjectList(generics.CreateAPIView, generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         response = generics.ListAPIView.get(self, request, args, kwargs)
         return ObjectResponse.make(response=response)
+
 
 # URL: /api/projects/{project id}
 # Data: in URL
@@ -278,3 +282,23 @@ def stop_execution(request):
         return DefaultResponse.make()
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
+
+
+@api_view(['POST'])
+def duplicate_proj(request):
+    serialized_body = DuplicateProjectSerializer2(data=request.data)
+    if serialized_body.is_valid():
+        duplicated = Project()
+        duplicated.name = 'Duplicate of ' + serialized_body.fetched_project.name
+        duplicated.user_id = serialized_body.fetched_project.user_id
+
+        original_project_folder_path = server.get_project_folder_path(serialized_body.validated_data['id'])
+        duplicated_project_folder_path = server.get_project_folder_path(duplicated.id)
+        copy_tree(original_project_folder_path, duplicated_project_folder_path)
+        duplicated.save()
+        project_serializer = ProjectSerializer(instance=duplicated)
+        return ObjectResponse.make(obj=project_serializer.data)
+    else:
+        return ErrorResponse.make(errors=serialized_body.errors)
+
+

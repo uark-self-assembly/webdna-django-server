@@ -25,6 +25,7 @@ urlpatterns = [
     url(r'^api/projects/$', projects.ProjectList.as_view()),
     url(r'^api/projects/?(?P<id>[^/]+)/$', projects.ProjectView.as_view()),
 
+    url(r'^api/projects/duplicate', projects.duplicate_proj),
     url(r'^api/projects/simulation/execute', projects.execute),
     url(r'^api/projects/simulation/terminate', projects.stop_execution),
     url(r'^api/projects/current-output', projects.check_output),

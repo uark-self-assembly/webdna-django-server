@@ -38,6 +38,7 @@ class Project(models.Model):
     created_on = models.DateTimeField(default=timezone.now)
     sim_time = models.DurationField
 
+
 class Job(models.Model):
     class Meta:
         db_table = '"webdna"."job"'
