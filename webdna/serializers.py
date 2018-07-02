@@ -12,6 +12,55 @@ from .defaults import FileType
 import webdna.util.server as server
 
 
+class DuplicateProjectSerializer2(serializers.Serializer):
+    class Meta:
+        model = Project
+        fields = 'id'
+
+    id = serializers.CharField(max_length=36)
+    fetched_project = None
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
+
+    def validate(self, data):
+        project_id = data['id']
+        query_set = Project.objects.all()
+        fetched = query_set.filter(id=project_id)
+        if not fetched:
+            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+
+        self.fetched_project = fetched[0]
+        return data
+
+
+class DuplicateProjectSerializer(serializers.Serializer):
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
+
+    class Meta:
+        model = Project
+        fields = 'id'
+
+    fetched_project = None
+
+    def validate(self, data):
+        project_id = data['project_id']
+        query_set = Project.objects.all()
+        fetched = query_set.filter(id=project_id)
+        if not fetched:
+            raise serializers.ValidationError(PROJECT_NOT_FOUND)
+
+        self.fetched_project = fetched[0]
+        return data
+
+
 class UserOutputRequestSerializer(serializers.Serializer):
     class Meta:
         model = Project
@@ -262,10 +311,11 @@ class ProjectExistenceSerializer(serializers.Serializer):
         model = Project
         fields = 'id'
 
-    project_id = serializers.UUIDField()
+    id = serializers.UUIDField()
+    fetched_project = None
 
-    def validate(self, project_data):
-        project_id = project_data['project_id']
+    def validate(self, data):
+        project_id = data['id']
 
         query_set = Project.objects.all()
         fetched = query_set.filter(id=project_id)
@@ -273,7 +323,8 @@ class ProjectExistenceSerializer(serializers.Serializer):
         if not fetched:
             raise serializers.ValidationError(PROJECT_NOT_FOUND)
 
-        return project_data
+        self.fetched_project = fetched[0]
+        return data
 
 
 class RegistrationSerializer(serializers.Serializer):
