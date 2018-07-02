@@ -60,14 +60,14 @@ class ProjectList(generics.CreateAPIView, generics.ListAPIView):
     def get(self, request, *args, **kwargs):
         response = generics.ListAPIView.get(self, request, args, kwargs)
         print(response.data)
-        for key in response.data:
-            fetched_job = Job.objects.filter(project_id=key['id'])
+        for project in response.data:
+            fetched_job = Job.objects.filter(project_id=project['id'])
 
             if fetched_job:
                 job_serialized = JobSerializer(instance=fetched_job[0])
-                key['job'] = job_serialized.data
+                project['job'] = job_serialized.data
             else:
-                key['job'] = None
+                project['job'] = None
 
         return ObjectResponse.make(response=response)
 

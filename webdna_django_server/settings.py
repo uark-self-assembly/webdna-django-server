@@ -25,18 +25,21 @@ SECRET_KEY = '*=(0y#-6s%=n-3z3q=sg2n7e#hqeh2&286q)t2=gh5y!zxcu3r'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-CORS_ORIGIN_ALLOW_ALL = True
-ALLOWED_HOSTS = [
-    '10.0.2.15',
-    '10.9.1.113',
-    '192.168.0.10',
-    '192.168.1.2',
-    '192.168.1.5',
-    '127.0.0.1',
-    '10.5.53.112',
-    'localhost'
-]
 
+def get_local_ip():
+    import socket
+    local_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    local_socket.connect(('8.8.8.8', 80))
+    socket_name = local_socket.getsockname()[0]
+    local_socket.close()
+    return socket_name
+
+
+ALLOWED_HOSTS = [
+    'localhost:8080',
+    '127.0.0.1:8080',
+    get_local_ip()
+]
 
 # Application definition
 
@@ -60,8 +63,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
 ]
 
 ROOT_URLCONF = 'webdna_django_server.urls'
