@@ -291,19 +291,24 @@ def project_zip(request, *args, **kwargs):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
-@api_view(['POST'])
-def duplicate_proj(request):
-    serialized_body = DuplicateProjectSerializer2(data=request.data)
+# URL: api/projects/<uuid:project_id>/duplicate/
+@api_view(['GET'])
+def duplicate_project(request):
+    serialized_body = ProjectExistenceSerializer(data=request.data)
     if serialized_body.is_valid():
-        duplicated = Project()
-        duplicated.name = 'Duplicate of ' + serialized_body.fetched_project.name
-        duplicated.user_id = serialized_body.fetched_project.user_id
+        new_project = Project()
+        new_project.name = 'Duplicate of ' + serialized_body.fetched_project.name
+        new_project.user_id = serialized_body.fetched_project.user_id
 
-        original_project_folder_path = server.get_project_folder_path(serialized_body.validated_data['id'])
-        duplicated_project_folder_path = server.get_project_folder_path(duplicated.id)
+        original_project_id = serialized_body.validated_data['id']
+        original_project_folder_path = server.get_project_folder_path(original_project_id)
+        duplicated_project_folder_path = server.get_project_folder_path(new_project.id)
+
         copy_tree(original_project_folder_path, duplicated_project_folder_path)
-        duplicated.save()
-        project_serializer = ProjectSerializer(instance=duplicated)
+
+        new_project.save()
+
+        project_serializer = ProjectSerializer(instance=new_project)
         return ObjectResponse.make(obj=project_serializer.data)
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
