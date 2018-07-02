@@ -8,6 +8,8 @@ from django.contrib.auth.hashers import make_password, check_password
 
 from .models import *
 from .messages import *
+from .defaults import FileType
+import webdna.util.server as server
 
 
 class UserOutputRequestSerializer(serializers.Serializer):
@@ -38,8 +40,8 @@ class ExecutionSerializer(serializers.Serializer):
         model = Job
         fields = 'project_id'
 
-    project_id = serializers.CharField(max_length=36)
-    should_regenerate = serializers.BooleanField()
+    project_id = serializers.UUIDField()
+    regenerate = serializers.BooleanField()
     fetched_job = None
 
     def create(self, validated_data):
@@ -75,7 +77,7 @@ class TerminateSerializer(serializers.Serializer):
             model = Job
             fields = 'project_id'
 
-        project_id = serializers.CharField(max_length=36)
+        project_id = serializers.UUIDField()
         fetched_job = None
 
         def create(self, validated_data):
@@ -139,18 +141,23 @@ class ScriptUploadSerializer(serializers.Serializer):
 
 
 class FileSerializer(ExecutionSerializer):
-    file_name = serializers.CharField(max_length=128)
+    file_type = serializers.CharField(max_length=128)
+    project_file = None
 
     def validate(self, execution_data):
         try:
-            valid_job_proj = super().validate(self, execution_data)
+            validated_execution_data = ExecutionSerializer.validate(self, execution_data)
         except serializers.ValidationError as error:
             raise error
 
-        project_id = valid_job_proj['project_id']
-        file_name = valid_job_proj['file_name']
-        file_path = os.path.join('server-data', 'server-projects', str(project_id), str(file_name))
-        if not os.path.isfile(file_path):
+        project_id = validated_execution_data['project_id']
+        file_type_string = validated_execution_data['file_type']
+        try:
+            self.project_file = FileType[file_type_string].value
+        except KeyError:
+            raise serializers.ValidationError(INVALID_FILE_TYPE)
+
+        if not server.project_file_exists(project_id, self.project_file):
             raise serializers.ValidationError(MISSING_PROJECT_FILES)
 
         return execution_data
@@ -255,7 +262,7 @@ class ProjectExistenceSerializer(serializers.Serializer):
         model = Project
         fields = 'id'
 
-    project_id = serializers.CharField(max_length=36)
+    project_id = serializers.UUIDField()
 
     def validate(self, project_data):
         project_id = project_data['project_id']

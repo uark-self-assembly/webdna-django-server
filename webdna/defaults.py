@@ -30,6 +30,14 @@ class ProjectFile(Enum):
     SCRIPT_CHAIN = DEFAULT_SCRIPT_CHAIN_FILE_NAME
 
 
+class FileType(Enum):
+    """
+    Defines the types of files that are upload-able by the user
+    """
+    SEQUENCE = ProjectFile.SEQUENCE
+    TRAJECTORY_DAT = ProjectFile.TRAJECTORY_DAT
+
+
 class AnalysisFile(Enum):
     LOG = DEFAULT_ANALYSIS_LOG_FILE_NAME
     OUTPUT = DEFAULT_ANALYSIS_OUTPUT_FILE_NAME

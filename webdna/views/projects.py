@@ -1,4 +1,5 @@
 import shutil
+from enum import Enum
 
 from django.http import HttpResponse
 from rest_framework import generics
@@ -10,40 +11,53 @@ from rest_framework.views import APIView
 import webdna.tasks as tasks
 import webdna.util.file as file_util
 import webdna.util.project as project_util
-import webdna.util.server as server
 from webdna.defaults import ProjectFile
 from webdna_django_server.celery import app
 from ..responses import *
 from ..serializers import *
 
 
-# URL: /api/projects/files/upload
-# Data: in request body
+# URL: api/projects/<uuid:project_id>/files/upload/
 class FileUploadView(APIView):
     parser_classes = (MultiPartParser,)
 
-    def put(self, request):
-        file_obj = request.data['file']
-        project_id = request.data['id']
-        file_name = request.data['type']  # Any kind of file in project to edit
+    def put(self, request, *args, **kwargs):
+        project_existence_serializer = ProjectExistenceSerializer(data=kwargs)
+        if project_existence_serializer.is_valid():
+            project_id = kwargs['project_id']
+            file_obj = request.data['file']
+            file_type_string = request.data['type']  # Any kind of file in project to edit
 
-        new_file_path = server.get_project_file(project_id, file_name)
+            try:
+                file_type = FileType[file_type_string].value
+            except KeyError:
+                return ErrorResponse.make(
+                    status=status.HTTP_400_BAD_REQUEST,
+                    message='Invalid FileType: {}'.format(file_type_string))
 
-        if os.path.isfile(new_file_path):
-            os.remove(new_file_path)
+            new_file_path = server.get_project_file(project_id, file_type)
 
-        new_file = open(file=new_file_path, mode='wb')
-        for line in file_obj.readlines():
-            new_file.write(line)
-        new_file.close()
+            if os.path.isfile(new_file_path):
+                os.remove(new_file_path)
 
-        return ErrorResponse.make(status=status.HTTP_204_NO_CONTENT)
+            new_file = open(file=new_file_path, mode='wb')
+            for line in file_obj.readlines():
+                new_file.write(line)
+            new_file.close()
 
-# URL: /api/projects
-# Data: in request body
+            return DefaultResponse.make(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return ErrorResponse.make(status=status.HTTP_404_NOT_FOUND)
+
+
+# URL: /api/projects/
 class ProjectList(generics.CreateAPIView, generics.ListAPIView):
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+
+    def get(self, request, *args, **kwargs):
+        response = generics.ListAPIView.get(self, request, args, kwargs)
+        return ObjectResponse.make(response=response)
 
     def post(self, request, *args, **kwargs):
         response = generics.CreateAPIView.post(self, request, args, kwargs)
@@ -54,12 +68,8 @@ class ProjectList(generics.CreateAPIView, generics.ListAPIView):
         os.makedirs(project_folder_path, exist_ok=True)
         return ObjectResponse.make(response=response)
 
-    def get(self, request, *args, **kwargs):
-        response = generics.ListAPIView.get(self, request, args, kwargs)
-        return ObjectResponse.make(response=response)
 
-# URL: /api/projects/{project id}
-# Data: in URL
+# URL: /api/projects/<uuid:project_id>/
 class ProjectView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'id'
     queryset = Project.objects.all()
@@ -93,18 +103,57 @@ class ProjectView(generics.RetrieveUpdateDestroyAPIView):
         return ObjectResponse.make(response=response)
 
 
-# /api/projects/simulation/execute
-# Data: in request body
-@api_view(['POST'])
-def execute(request):
-    serialized_body = ExecutionSerializer(data=request.data)
+# /api/projects/<uuid:id>/settings/
+class SettingsView(generics.RetrieveUpdateAPIView):
+
+    def get(self, request, *args, **kwargs):
+        serialized_body = ProjectExistenceSerializer(data=kwargs)
+        if serialized_body.is_valid():
+            project_id = serialized_body.validated_data['project_id']
+
+            input_data = file_util.parse_input_file(project_id)
+            if input_data == MISSING_PROJECT_FILES:
+                return ErrorResponse.make(status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
+
+            return ObjectResponse.make(obj=input_data)
+        else:
+            return ErrorResponse.make(errors=serialized_body.errors)
+
+    def put(self, request, *args, **kwargs):
+        request.data['project_id'] = kwargs['project_id']
+
+        project_settings_serializer = ProjectSettingsSerializer(data=request.data)
+        if project_settings_serializer.is_valid():
+            settings_data = project_settings_serializer.validated_data
+            project_id = settings_data['project_id']
+            input_file_status = file_util.generate_input_file(project_id, settings_data)
+
+            if input_file_status == MISSING_PROJECT_FILES:
+                return ErrorResponse.make(
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    message=MISSING_PROJECT_FILES)
+
+            return DefaultResponse.make(status.HTTP_201_CREATED)
+        else:
+            return ErrorResponse.make(errors=project_settings_serializer.errors)
+
+
+# /api/projects/<uuid:id>/simulation/execute/
+@api_view(['GET'])
+def execute(request, *args, **kwargs):
+    execution_data = {
+        'project_id': kwargs['project_id'],
+        'regenerate': request.query_params['regenerate']
+    }
+
+    serialized_body = ExecutionSerializer(data=execution_data)
     if serialized_body.is_valid():
         job = serialized_body.fetched_job
         if job is None:
             job = serialized_body.create(serialized_body.validated_data)
 
         project_id = serialized_body.validated_data['project_id']
-        should_regenerate = serialized_body.validated_data['should_regenerate']
+        regenerate = serialized_body.validated_data['regenerate']
         fetched_project = Project.objects.all().filter(id=project_id)
         user_id = fetched_project[0].user_id
         project_folder_path = server.get_project_folder_path(project_id)
@@ -117,7 +166,7 @@ def execute(request):
         if os.path.isdir(project_folder_path):
             is_project_executable = False
 
-            if should_regenerate and os.path.isfile(sequence_file):
+            if regenerate and os.path.isfile(sequence_file):
                 is_project_executable = True
             else:
                 if os.path.isfile(generated_dat) and os.path.isfile(generated_top):
@@ -127,7 +176,7 @@ def execute(request):
                 is_project_executable = False
 
             if is_project_executable:
-                tasks.execute_sim.delay(job.id, job.project_id, user_id, should_regenerate)
+                tasks.execute_sim.delay(job.id, job.project_id, user_id, regenerate)
                 return ExecutionResponse.make()
             else:
                 return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -137,11 +186,23 @@ def execute(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
-# URL: /api/projects/running-status?project_id={project id}
-# Data: in URL
+# URL: /api/projects/<uuid:id>/simulation/terminate/
 @api_view(['GET'])
-def check_running(request):
-    serialized_body = CheckStatusSerializer(data=request.query_params)
+def terminate(request, *args, **kwargs):
+    serialized_body = TerminateSerializer(data=kwargs)
+    if serialized_body.is_valid():
+        job = serialized_body.fetched_job
+        app.control.revoke(job.process_name, terminate=True)
+        job.delete()
+        return DefaultResponse.make()
+    else:
+        return ErrorResponse.make(errors=serialized_body.errors)
+
+
+# URL: /api/projects/<uuid:id>/running-status/
+@api_view(['GET'])
+def get_running_status(request, *args, **kwargs):
+    serialized_body = CheckStatusSerializer(data=kwargs)
     if serialized_body.is_valid():
         running = serialized_body.fetched_job.finish_time is None
         response_data = {'running': running}
@@ -151,11 +212,10 @@ def check_running(request):
         return ObjectResponse.make(response_data)
 
 
-# URL: /api/projects/current-output
-# Data: in request body
-@api_view(['POST'])
-def check_output(request):
-    serialized_body = CheckStatusSerializer(data=request.data)
+# URL: /api/projects/<uuid:id>/current-output/
+@api_view(['GET'])
+def get_current_output(request, *args, **kwargs):
+    serialized_body = CheckStatusSerializer(data=kwargs)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
         running = serialized_body.fetched_job.finish_time is None
@@ -178,59 +238,23 @@ def check_output(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
-# URL: /api/projects/settings/apply
-# Data: in request body
-@api_view(['POST'])
-def set_project_settings(request):
-    serialized_body = ProjectSettingsSerializer(data=request.data)
-    if serialized_body.is_valid():
-        project_id = serialized_body.validated_data['project_id']
-
-        input_file_status = file_util.generate_input_file(project_id, serialized_body.validated_data)
-        if input_file_status == MISSING_PROJECT_FILES:
-            return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
-
-        return DefaultResponse.make(status.HTTP_201_CREATED)
-    else:
-        return ErrorResponse.make(errors=serialized_body.errors)
-
-
-# URL: /api/projects/settings/retrieve
-# Data: in request body
-@api_view(['POST'])
-def get_project_settings(request):
-    serialized_body = ProjectExistenceSerializer(data=request.data)
-    if serialized_body.is_valid():
-        project_id = serialized_body.validated_data['project_id']
-
-        input_data = file_util.parse_input_file(project_id)
-        if input_data == MISSING_PROJECT_FILES:
-            return ErrorResponse.make(status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
-
-        return ObjectResponse.make(obj=input_data)
-    else:
-        return ErrorResponse.make(errors=serialized_body.errors)
-
-
-# URL: /api/projects/files/retrieve?project_id={project id}&should_regenerate={boolean}&file_name={filename}
-# Data: in URL
+# URL: api/projects/<uuid:project_id>/files/download/<string:file_type>/
 @api_view(['GET'])
-def get_project_file(request):
-    serialized_body = FileSerializer(data=request.query_params)
+def download_project_file(request, *args, **kwargs):
+    serialized_body = FileSerializer(data=kwargs)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
-        file_name = serialized_body.validated_data['file_name']
-        file_path = server.get_project_file(project_id, file_name)
-        return file_util.get_file_contents_as_string(file_path)
+        project_file = serialized_body.project_file
+        project_file_path = server.get_project_file(project_id, project_file)
+        return file_util.get_file_contents_as_string(project_file_path)
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
-# URL: /api/projects/files/trajectory?project_id={project_id}
-# Data: in URL
+# URL: /api/projects/<uuid:project_id>/files/trajectory/
 @api_view(['GET'])
-def fetch_traj(request):
-    serialized_body = GetPDBSerializer(data=request.query_params)
+def generate_visualization(request, *args, **kwargs):
+    serialized_body = GetPDBSerializer(data=kwargs)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
 
@@ -247,11 +271,10 @@ def fetch_traj(request):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
-# URL: /api/projects/files/zip?project_id={project id}
-# Data: in URL
+# URL: api/projects/<uuid:project_id>/files/zip/
 @api_view(['GET'])
-def project_zip(request):
-    serialized_body = ProjectExistenceSerializer(data=request.query_params)
+def project_zip(request, *args, **kwargs):
+    serialized_body = ProjectExistenceSerializer(data=kwargs)
     if serialized_body.is_valid():
         project_id = serialized_body.validated_data['project_id']
 
@@ -262,19 +285,5 @@ def project_zip(request):
             response['Content-Disposition'] = 'attachment; filename="project.zip"'
             archive_file.close()
         return response
-    else:
-        return ErrorResponse.make(errors=serialized_body.errors)
-
-
-# URL: /api/projects/simulation/terminate
-# Data: in request body
-@api_view(['POST'])
-def stop_execution(request):
-    serialized_body = TerminateSerializer(data=request.data)
-    if serialized_body.is_valid():
-        job = serialized_body.fetched_job
-        app.control.revoke(job.process_name, terminate=True)
-        job.delete()
-        return DefaultResponse.make()
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
