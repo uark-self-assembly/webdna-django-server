@@ -48,3 +48,4 @@ class Job(models.Model):
     start_time = models.DateTimeField(editable=False, default=timezone.now)
     finish_time = models.DateTimeField(editable=False, default=None, null=True)
     process_name = models.CharField(max_length=128, default=None, null=True)
+    terminated = models.BooleanField(default=False)

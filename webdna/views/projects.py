@@ -59,6 +59,16 @@ class ProjectList(generics.CreateAPIView, generics.ListAPIView):
 
     def get(self, request, *args, **kwargs):
         response = generics.ListAPIView.get(self, request, args, kwargs)
+        print(response.data)
+        for key in response.data:
+            fetched_job = Job.objects.filter(project_id=key['id'])
+
+            if fetched_job:
+                job_serialized = JobSerializer(instance=fetched_job[0])
+                key['job'] = job_serialized.data
+            else:
+                key['job'] = None
+
         return ObjectResponse.make(response=response)
 
     def post(self, request, *args, **kwargs):
@@ -79,6 +89,14 @@ class ProjectView(generics.RetrieveUpdateDestroyAPIView):
 
     def get(self, request, *args, **kwargs):
         response = generics.RetrieveUpdateDestroyAPIView.get(self, request, args, kwargs)
+        fetched_job = Job.objects.filter(project_id=response.data['id'])
+
+        if fetched_job:
+            job_serialized = JobSerializer(instance=fetched_job[0])
+            response.data['job'] = job_serialized.data
+        else:
+            response.data['job'] = None
+
         return ObjectResponse.make(response=response)
 
     def put(self, request, *args, **kwargs):
@@ -195,23 +213,13 @@ def terminate(request, *args, **kwargs):
     if serialized_body.is_valid():
         job = serialized_body.fetched_job
         app.control.revoke(job.process_name, terminate=True)
-        job.delete()
+        job.terminated = True
+        job.finish_time = timezone.now()
+        job.process_name = None
+        job.save(update_fields=['process_name', 'terminated', 'finish_time'])
         return DefaultResponse.make()
     else:
         return ErrorResponse.make(errors=serialized_body.errors)
-
-
-# URL: /api/projects/<uuid:id>/running-status/
-@api_view(['GET'])
-def get_running_status(request, *args, **kwargs):
-    serialized_body = CheckStatusSerializer(data=kwargs)
-    if serialized_body.is_valid():
-        running = serialized_body.fetched_job.finish_time is None
-        response_data = {'running': running}
-        return ObjectResponse.make(response_data)
-    else:
-        response_data = {'running': False}
-        return ObjectResponse.make(response_data)
 
 
 # URL: /api/projects/<uuid:id>/current-output/

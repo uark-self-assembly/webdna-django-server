@@ -30,7 +30,6 @@ urlpatterns = [
 
     # /projects/{id}
     path('api/projects/<uuid:project_id>/current-output/', projects.get_current_output),
-    path('api/projects/<uuid:project_id>/running-status/', projects.get_running_status),
     path('api/projects/<uuid:project_id>/settings/', projects.SettingsView.as_view()),
     path('api/projects/<uuid:project_id>/generate-visualization/', projects.generate_visualization),
     path('api/projects/<uuid:project_id>/duplicate/', projects.duplicate_project),
