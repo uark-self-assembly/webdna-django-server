@@ -262,11 +262,11 @@ class ProjectExistenceSerializer(serializers.Serializer):
         model = Project
         fields = 'id'
 
-    id = serializers.UUIDField()
+    project_id = serializers.UUIDField()
     fetched_project = None
 
     def validate(self, data):
-        project_id = data['id']
+        project_id = data['project_id']
 
         query_set = Project.objects.all()
         fetched = query_set.filter(id=project_id)
