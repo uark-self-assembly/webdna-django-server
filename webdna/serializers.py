@@ -8,55 +8,8 @@ from django.contrib.auth.hashers import make_password, check_password
 
 from .models import *
 from .messages import *
-
-
-class DuplicateProjectSerializer2(serializers.Serializer):
-    class Meta:
-        model = Project
-        fields = 'id'
-
-    id = serializers.CharField(max_length=36)
-    fetched_project = None
-
-    def create(self, validated_data):
-        pass
-
-    def update(self, instance, validated_data):
-        pass
-
-    def validate(self, data):
-        project_id = data['id']
-        query_set = Project.objects.all()
-        fetched = query_set.filter(id=project_id)
-        if not fetched:
-            raise serializers.ValidationError(PROJECT_NOT_FOUND)
-
-        self.fetched_project = fetched[0]
-        return data
-
-
-class DuplicateProjectSerializer(serializers.Serializer):
-    def create(self, validated_data):
-        pass
-
-    def update(self, instance, validated_data):
-        pass
-
-    class Meta:
-        model = Project
-        fields = 'id'
-
-    fetched_project = None
-
-    def validate(self, data):
-        project_id = data['project_id']
-        query_set = Project.objects.all()
-        fetched = query_set.filter(id=project_id)
-        if not fetched:
-            raise serializers.ValidationError(PROJECT_NOT_FOUND)
-
-        self.fetched_project = fetched[0]
-        return data
+from .defaults import FileType
+import webdna.util.server as server
 
 
 class UserOutputRequestSerializer(serializers.Serializer):
@@ -87,8 +40,8 @@ class ExecutionSerializer(serializers.Serializer):
         model = Job
         fields = 'project_id'
 
-    project_id = serializers.CharField(max_length=36)
-    should_regenerate = serializers.BooleanField()
+    project_id = serializers.UUIDField()
+    regenerate = serializers.BooleanField()
     fetched_job = None
 
     def create(self, validated_data):
@@ -124,7 +77,7 @@ class TerminateSerializer(serializers.Serializer):
             model = Job
             fields = 'project_id'
 
-        project_id = serializers.CharField(max_length=36)
+        project_id = serializers.UUIDField()
         fetched_job = None
 
         def create(self, validated_data):
@@ -188,18 +141,23 @@ class ScriptUploadSerializer(serializers.Serializer):
 
 
 class FileSerializer(ExecutionSerializer):
-    file_name = serializers.CharField(max_length=128)
+    file_type = serializers.CharField(max_length=128)
+    project_file = None
 
     def validate(self, execution_data):
         try:
-            valid_job_proj = super().validate(self, execution_data)
+            validated_execution_data = ExecutionSerializer.validate(self, execution_data)
         except serializers.ValidationError as error:
             raise error
 
-        project_id = valid_job_proj['project_id']
-        file_name = valid_job_proj['file_name']
-        file_path = os.path.join('server-data', 'server-projects', str(project_id), str(file_name))
-        if not os.path.isfile(file_path):
+        project_id = validated_execution_data['project_id']
+        file_type_string = validated_execution_data['file_type']
+        try:
+            self.project_file = FileType[file_type_string].value
+        except KeyError:
+            raise serializers.ValidationError(INVALID_FILE_TYPE)
+
+        if not server.project_file_exists(project_id, self.project_file):
             raise serializers.ValidationError(MISSING_PROJECT_FILES)
 
         return execution_data
@@ -304,7 +262,7 @@ class ProjectExistenceSerializer(serializers.Serializer):
         model = Project
         fields = 'id'
 
-    id = serializers.UUIDField
+    id = serializers.UUIDField()
     fetched_project = None
 
     def validate(self, data):

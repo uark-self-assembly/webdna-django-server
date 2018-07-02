@@ -14,30 +14,37 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.conf.urls import url
+from django.urls import path
 from rest_framework.urlpatterns import format_suffix_patterns
 from webdna.views import projects, scripts, users
 
 urlpatterns = [
-    url(r'^api/users/login', users.login),
-    url(r'^api/users/register', users.register),
-    url(r'^api/users', users.UserView.as_view()),
+    # /users
+    path('api/users/', users.UserView.as_view()),
+    path('api/users/login/', users.login),
+    path('api/users/register/', users.register),
 
-    url(r'^api/projects/$', projects.ProjectList.as_view()),
-    url(r'^api/projects/?(?P<id>[^/]+)/$', projects.ProjectView.as_view()),
+    # /projects
+    path('api/projects/', projects.ProjectList.as_view()),
+    path('api/projects/<uuid:id>/', projects.ProjectView.as_view()),
 
-    url(r'^api/projects/duplicate', projects.duplicate_proj),
-    url(r'^api/projects/simulation/execute', projects.execute),
-    url(r'^api/projects/simulation/terminate', projects.stop_execution),
-    url(r'^api/projects/current-output', projects.check_output),
-    url(r'^api/projects/running-status', projects.check_running),
-    url(r'^api/projects/settings/apply', projects.set_project_settings),
-    url(r'^api/projects/settings/retrieve', projects.get_project_settings),
+    # /projects/{id}
+    path('api/projects/<uuid:project_id>/current-output/', projects.get_current_output),
+    path('api/projects/<uuid:project_id>/running-status/', projects.get_running_status),
+    path('api/projects/<uuid:project_id>/settings/', projects.SettingsView.as_view()),
+    path('api/projects/<uuid:project_id>/generate-visualization/', projects.generate_visualization),
+    path('api/projects/<uuid:project_id>/duplicate/', projects.duplicate_project),
 
-    url(r'^api/projects/files/trajectory', projects.fetch_traj),
-    url(r'^api/projects/files/upload', projects.FileUploadView.as_view()),
-    url(r'^api/projects/files/retrieve', projects.get_project_file),
-    url(r'^api/projects/files/zip', projects.project_zip),
+    # /projects/{id}/simulation
+    path('api/projects/<uuid:project_id>/simulation/execute/', projects.execute),
+    path('api/projects/<uuid:project_id>/simulation/terminate/', projects.terminate),
 
+    # /projects/{id}/files
+    path('api/projects/<uuid:project_id>/files/upload/', projects.FileUploadView.as_view()),
+    path('api/projects/<uuid:project_id>/files/download/<str:file_type>/', projects.download_project_file),
+    path('api/projects/<uuid:project_id>/files/zip/', projects.project_zip),
+
+    # /scripts
     url(r'^api/scripts/$', scripts.ScriptList.as_view()),
     url(r'^api/scripts/upload', scripts.ScriptUploadView.as_view()),
     url(r'^api/scripts/userlog', scripts.get_user_log),
