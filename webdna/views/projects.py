@@ -1,4 +1,5 @@
 import shutil
+import json
 from enum import Enum
 from distutils.dir_util import copy_tree
 
@@ -147,6 +148,13 @@ class SettingsView(generics.RetrieveUpdateAPIView):
             settings_data = project_settings_serializer.validated_data
             project_id = settings_data['project_id']
             input_file_status = file_util.generate_input_file(project_id, settings_data)
+            gen_args = [settings_data['box_size']]
+            fetched_project = Project.objects.all().filter(id=project_id)[0]
+            generation_info = project_util.Generation(method='generate-sa', arguments=gen_args)
+            json_settings = project_util.ProjectSettings(project_name=fetched_project.name, generation=generation_info)
+
+            with open(server.get_project_file(project_id, ProjectFile.JSON), 'w') as json_file:
+                json.dump(json_settings.__dict__, json_file)
 
             if input_file_status == MISSING_PROJECT_FILES:
                 return ErrorResponse.make(

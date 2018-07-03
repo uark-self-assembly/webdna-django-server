@@ -5,6 +5,36 @@ import webdna.util.server as server
 from zipfile import ZipFile
 
 
+class Generation:
+    def __init__(self, method=None, arguments=None, orig=None):
+        if orig is None:
+            self.method = method
+            self.arguments = arguments
+            self.files = None
+            if method == 'generate-sa' or method == 'generate-folded':
+                self.files = 'sequence.txt'
+                self.arguments.append(self.files)
+            elif method == 'cadnano-interface':
+                self.files = 'cadnano-project.json'
+                self.arguments.insert(0, self.files)
+
+            if self.files is None:
+                raise ValueError('Value of method argument not valid')
+        else:
+            self.copy(orig)
+
+    def copy(self, orig):
+        self.method = orig.method
+        self.files = orig.files
+        self.arguments = orig.arguments
+
+
+class ProjectSettings:
+    def __init__(self, project_name, generation):
+        self.name = project_name
+        self.gen = Generation(generation)
+
+
 def zip_simulation(project_id):
     project_zip_path = server.get_project_file(project_id, ProjectFile.SIMULATION_ZIP)
     if server.simulation_files_exist(project_id):
