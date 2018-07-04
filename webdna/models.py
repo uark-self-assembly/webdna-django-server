@@ -36,7 +36,6 @@ class Project(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
     created_on = models.DateTimeField(default=timezone.now)
-    sim_time = models.DurationField
 
 
 class Job(models.Model):

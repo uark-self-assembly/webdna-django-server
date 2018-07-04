@@ -28,11 +28,24 @@ class Generation:
         self.files = orig.files
         self.arguments = orig.arguments
 
+    def serializable(self):
+        return {
+            'method': self.method,
+            'files': self.files,
+            'arguments': self.arguments
+        }
+
 
 class ProjectSettings:
     def __init__(self, project_name, generation):
         self.name = project_name
-        self.gen = Generation(generation)
+        self.gen = Generation(orig=generation)
+
+    def serializable(self):
+        return {
+            'name': self.name,
+            'gen': self.gen.serializable()
+        }
 
 
 def zip_simulation(project_id):

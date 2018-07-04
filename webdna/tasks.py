@@ -31,8 +31,9 @@ def generate_topology_from_sequence_file(project_id, box_size, log_file_path):
 
 @app.task()
 def execute_sim(job_id, project_id, user_id, should_regenerate, fresh_execution=True):
-    job = Job(id=job_id, process_name=execute_sim.request.id, finish_time=None, terminated=False)
-    job.save(update_fields=['process_name', 'finish_time', 'terminated'])
+    job = Job(
+        id=job_id, process_name=execute_sim.request.id, start_time=timezone.now(), finish_time=None, terminated=False)
+    job.save(update_fields=['process_name', 'start_time', 'finish_time', 'terminated'])
 
     # Clean the previous execution files
     if should_regenerate or fresh_execution:

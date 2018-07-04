@@ -60,7 +60,6 @@ class ProjectList(generics.CreateAPIView, generics.ListAPIView):
 
     def get(self, request, *args, **kwargs):
         response = generics.ListAPIView.get(self, request, args, kwargs)
-        print(response.data)
         for project in response.data:
             fetched_job = Job.objects.filter(project_id=project['id'])
 
@@ -154,7 +153,7 @@ class SettingsView(generics.RetrieveUpdateAPIView):
             json_settings = project_util.ProjectSettings(project_name=fetched_project.name, generation=generation_info)
 
             with open(server.get_project_file(project_id, ProjectFile.JSON), 'w') as json_file:
-                json.dump(json_settings.__dict__, json_file)
+                json.dump(json_settings.serializable(), json_file)
 
             if input_file_status == MISSING_PROJECT_FILES:
                 return ErrorResponse.make(
