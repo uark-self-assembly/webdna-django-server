@@ -46,11 +46,7 @@ urlpatterns = [
     # /projects/{id}/files
     path('api/projects/<uuid:project_id>/files/upload/', projects.FileUploadView.as_view()),
     path('api/projects/<uuid:project_id>/files/download/<str:file_type>/', projects.download_project_file),
-    path('api/projects/<uuid:project_id>/files/zip/', projects.project_zip),
-
-    # /scripts
-    path('api/scripts/', scripts.ScriptList.as_view()),
-    path('api/scripts/<uuid:script_id>/', scripts.ScriptView.as_view()),
+    path('api/projects/<uuid:project_id>/files/zip/', projects.project_zip)
 ]
 
 url_patterns = format_suffix_patterns(urlpatterns)

@@ -2,17 +2,14 @@ from rest_framework import generics
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.parsers import MultiPartParser
-from rest_framework.views import APIView
 
 import webdna.tasks as tasks
-import webdna.util.server as server
 from webdna.defaults import ProjectFile, AnalysisFile
 from ..responses import *
 from ..serializers import *
 
 
-# URL: /api/scripts/upload
-# Data: in request body
+# URL: /api/users/<uuid:user_id>/scripts/<uuid:id>
 class ScriptView(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'id'
     queryset = Script.objects.all()
@@ -36,8 +33,7 @@ class ScriptView(generics.RetrieveUpdateDestroyAPIView):
             return ErrorResponse.make(errors=serialized_body.errors)
 
 
-# URL: /api/scripts
-# Data: None
+# URL: /api/users/<uuid:user_id>/scripts/
 class ScriptList(generics.CreateAPIView, generics.ListAPIView):
     queryset = Script.objects.all()
     serializer_class = ScriptSerializer
@@ -78,8 +74,7 @@ class ScriptList(generics.CreateAPIView, generics.ListAPIView):
         return ObjectResponse.make(response=response)
 
 
-# URL: /api/scripts/userlog?project_id={project id}
-# Data: in URL
+# URL: /api/projects/<uuid:project_id>/userlog
 @api_view(['GET'])
 def get_user_log(request, *args, **kwargs):
     log_data = {
@@ -103,8 +98,7 @@ def get_user_log(request, *args, **kwargs):
         return ErrorResponse.make(status=status.HTTP_400_BAD_REQUEST, message=PROJECT_NOT_FOUND)
 
 
-# URL: /api/scripts/execute-analysis
-# Data: in request body
+# URL: /api/projects/<uuid:project_id>/execute-analysis
 @api_view(['POST'])
 def run_analysis_scripts(request, *args, **kwargs):
     analysis_data = {
@@ -121,6 +115,7 @@ def run_analysis_scripts(request, *args, **kwargs):
         return ErrorResponse.make(errors=serialized_body.errors)
 
 
+# URL: /api/projects/<uuid:project_id>/scriptchain/
 class ScriptChainView(generics.RetrieveUpdateDestroyAPIView):
 
     def get(self, request, *args, **kwargs):
