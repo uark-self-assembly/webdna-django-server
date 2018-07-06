@@ -17,7 +17,7 @@ class UserOutputRequestSerializer(serializers.Serializer):
         model = Project
         fields = 'id'
 
-    project_id = serializers.CharField(max_length=36)
+    project_id = serializers.UUIDField()
 
     def create(self, validated_data):
         pass
@@ -25,14 +25,14 @@ class UserOutputRequestSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         pass
 
-    def validate(self, data):
-        project_id = data['project_id']
+    def validate(self, request_data):
+        project_id = request_data['project_id']
         query_set = Project.objects.all()
         fetched = query_set.filter(id=project_id)
         if not fetched:
             raise serializers.ValidationError(PROJECT_NOT_FOUND)
 
-        return data
+        return request_data
 
 
 class ExecutionSerializer(serializers.Serializer):
@@ -122,9 +122,9 @@ class ScriptUploadSerializer(serializers.Serializer):
 
     def validate(self, script_data):
         self.file_name = script_data['file_name']
-        self.user = script_data['user']
         self.file = script_data['file']
         self.description = script_data['description']
+        self.user = script_data['user']
 
         # make sure it doesn't already exist
         query_set = Script.objects.all()

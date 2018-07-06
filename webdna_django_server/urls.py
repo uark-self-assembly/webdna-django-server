@@ -23,6 +23,8 @@ urlpatterns = [
     path('api/users/', users.UserView.as_view()),
     path('api/users/login/', users.login),
     path('api/users/register/', users.register),
+    path('api/users/<uuid:user_id>/scripts/', scripts.ScriptList.as_view()),
+    path('api/users/<uuid:user_id>/scripts/<uuid:id>/', scripts.ScriptView.as_view()),
 
     # /projects
     path('api/projects/', projects.ProjectList.as_view()),
@@ -33,10 +35,13 @@ urlpatterns = [
     path('api/projects/<uuid:project_id>/settings/', projects.SettingsView.as_view()),
     path('api/projects/<uuid:project_id>/generate-visualization/', projects.generate_visualization),
     path('api/projects/<uuid:project_id>/duplicate/', projects.duplicate_project),
+    path('api/projects/<uuid:project_id>/execute-analysis', scripts.run_analysis_scripts),
 
     # /projects/{id}/simulation
     path('api/projects/<uuid:project_id>/simulation/execute/', projects.execute),
     path('api/projects/<uuid:project_id>/simulation/terminate/', projects.terminate),
+    path('api/projects/<uuid:project_id>/userlog/', scripts.get_user_log),
+    path('api/projects/<uuid:project_id>/scriptchain/', scripts.ScriptChainView.as_view()),
 
     # /projects/{id}/files
     path('api/projects/<uuid:project_id>/files/upload/', projects.FileUploadView.as_view()),
@@ -44,13 +49,8 @@ urlpatterns = [
     path('api/projects/<uuid:project_id>/files/zip/', projects.project_zip),
 
     # /scripts
-    url(r'^api/scripts/$', scripts.ScriptList.as_view()),
-    url(r'^api/scripts/upload', scripts.ScriptUploadView.as_view()),
-    url(r'^api/scripts/userlog', scripts.get_user_log),
-    url(r'^api/scripts/scriptchain/retrieve', scripts.fetch_script_chain),
-    url(r'^api/scripts/scriptchain/apply', scripts.set_scriptchain),
-    url(r'^api/scripts/execute-analysis', scripts.run_analysis_scripts),
-    url(r'^api/scripts/delete', scripts.delete_script)
+    path('api/scripts/', scripts.ScriptList.as_view()),
+    path('api/scripts/<uuid:script_id>/', scripts.ScriptView.as_view()),
 ]
 
 url_patterns = format_suffix_patterns(urlpatterns)
