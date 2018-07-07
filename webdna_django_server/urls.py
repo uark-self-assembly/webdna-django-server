@@ -41,12 +41,12 @@ urlpatterns = [
     path('api/projects/<uuid:project_id>/settings/', projects.SettingsView.as_view()),
     path('api/projects/<uuid:project_id>/generate-visualization/', projects.generate_visualization),
     path('api/projects/<uuid:project_id>/duplicate/', projects.duplicate_project),
-    path('api/projects/<uuid:project_id>/execute-analysis', scripts.run_analysis_scripts),
+    path('api/projects/<uuid:project_id>/execute-analysis/', scripts.AnalysisExecutionView.as_view()),
 
     # /projects/{id}/simulation
     path('api/projects/<uuid:project_id>/simulation/execute/', projects.execute),
     path('api/projects/<uuid:project_id>/simulation/terminate/', projects.terminate),
-    path('api/projects/<uuid:project_id>/userlog/', scripts.get_user_log),
+    path('api/projects/<uuid:project_id>/userlog/', scripts.UserLogView.as_view()),
     path('api/projects/<uuid:project_id>/scriptchain/', scripts.ScriptChainView.as_view()),
 
     # /projects/{id}/files

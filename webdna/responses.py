@@ -48,10 +48,11 @@ class ObjectResponse:
 
 class AuthenticationResponse:
     @staticmethod
-    def make(user, status=http_status.HTTP_200_OK, message='success'):
+    def make(user, serialized_user, status=http_status.HTTP_200_OK, message='success'):
         return ObjectResponse.make(
             obj={
-                'user': user,
+                'user': serialized_user,
+                'token': create_token(user)
             },
             status=status,
             message=message
@@ -60,9 +61,10 @@ class AuthenticationResponse:
 
 class RegistrationResponse:
     @staticmethod
-    def make(user):
+    def make(user, serialized_user):
         return AuthenticationResponse.make(
             user=user,
+            serialized_user=serialized_user,
             status=http_status.HTTP_201_CREATED,
             message='success'
         )
