@@ -37,22 +37,22 @@ urlpatterns = [
     path('api/projects/<uuid:id>/', projects.ProjectView.as_view()),
 
     # /projects/{id}
-    path('api/projects/<uuid:project_id>/current-output/', projects.get_current_output),
+    path('api/projects/<uuid:project_id>/current-output/', projects.OutputView.as_view()),
     path('api/projects/<uuid:project_id>/settings/', projects.SettingsView.as_view()),
-    path('api/projects/<uuid:project_id>/generate-visualization/', projects.generate_visualization),
-    path('api/projects/<uuid:project_id>/duplicate/', projects.duplicate_project),
+    path('api/projects/<uuid:project_id>/generate-visualization/', projects.GenerateVisualizationView.as_view()),
+    path('api/projects/<uuid:project_id>/duplicate/', projects.DuplicateProjectView.as_view()),
     path('api/projects/<uuid:project_id>/execute-analysis/', scripts.AnalysisExecutionView.as_view()),
 
     # /projects/{id}/simulation
-    path('api/projects/<uuid:project_id>/simulation/execute/', projects.execute),
-    path('api/projects/<uuid:project_id>/simulation/terminate/', projects.terminate),
+    path('api/projects/<uuid:project_id>/simulation/execute/', projects.ExecutionView.as_view()),
+    path('api/projects/<uuid:project_id>/simulation/terminate/', projects.TerminationView.as_view()),
     path('api/projects/<uuid:project_id>/userlog/', scripts.UserLogView.as_view()),
     path('api/projects/<uuid:project_id>/scriptchain/', scripts.ScriptChainView.as_view()),
 
     # /projects/{id}/files
     path('api/projects/<uuid:project_id>/files/upload/', projects.FileUploadView.as_view()),
-    path('api/projects/<uuid:project_id>/files/download/<str:file_type>/', projects.download_project_file),
-    path('api/projects/<uuid:project_id>/files/zip/', projects.project_zip)
+    path('api/projects/<uuid:project_id>/files/download/<str:file_type>/', projects.DownloadProjectFileView.as_view()),
+    path('api/projects/<uuid:project_id>/files/zip/', projects.ProjectZipView.as_view())
 ]
 
 url_patterns = format_suffix_patterns(urlpatterns)
