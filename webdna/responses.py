@@ -52,7 +52,6 @@ class AuthenticationResponse:
         return ObjectResponse.make(
             obj={
                 'user': user,
-                'token': encode(user)
             },
             status=status,
             message=message
@@ -73,3 +72,10 @@ class ExecutionResponse:
     @staticmethod
     def make():
         return ObjectResponse.make(status=http_status.HTTP_202_ACCEPTED, message='Executing simulation...')
+
+
+class PermissionDeniedResponse:
+    @staticmethod
+    def make():
+        return Response(status=http_status.HTTP_403_FORBIDDEN,
+                        data={'reason': 'User does not have permission to access this endpoint'})

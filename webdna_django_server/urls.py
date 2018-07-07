@@ -17,12 +17,18 @@ from django.conf.urls import url
 from django.urls import path
 from rest_framework.urlpatterns import format_suffix_patterns
 from webdna.views import projects, scripts, users
+from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token
 
 urlpatterns = [
+
+    # Navigate here to get JSON token
+    # /token-auth
+    url(r'^api/token-auth/', obtain_jwt_token),
+    url(r'^api/token-refresh', refresh_jwt_token),
     # /users
     path('api/users/', users.UserView.as_view()),
-    path('api/users/login/', users.login),
-    path('api/users/register/', users.register),
+    path('api/users/login/', users.LoginView.as_view()),
+    path('api/users/register/', users.RegistrationView.as_view()),
     path('api/users/<uuid:user_id>/scripts/', scripts.ScriptList.as_view()),
     path('api/users/<uuid:user_id>/scripts/<uuid:id>/', scripts.ScriptView.as_view()),
 

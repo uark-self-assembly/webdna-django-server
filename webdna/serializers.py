@@ -2,9 +2,11 @@ import re
 import os
 import random
 
+from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.hashers import make_password, check_password
+from rest_framework_jwt.settings import api_settings
 
 from .models import *
 from .messages import *
@@ -166,7 +168,16 @@ class FileSerializer(ExecutionSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'created_on')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'date_joined', 'token')
+
+    token = serializers.SerializerMethodField('create_token')
+
+    def create_token(self, user):
+        jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
+        jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
+        payload = jwt_payload_handler(user)
+        token = jwt_encode_handler(payload)
+        return token
 
 
 class ProjectSerializer(serializers.ModelSerializer):
@@ -192,8 +203,8 @@ class LoginSerializer(serializers.Serializer):
         model = User
         fields = ('username', 'password')
 
-    username = serializers.CharField(max_length=128)
-    password = serializers.CharField(max_length=128)
+    username = serializers.CharField(max_length=150)
+    password = serializers.CharField(write_only=True)
 
     fetched_user = None
 
@@ -207,16 +218,10 @@ class LoginSerializer(serializers.Serializer):
         username = login_data['username']
         password = login_data['password']
 
-        query_set = User.objects.all()
-        fetched = query_set.filter(username=username)
-        if not fetched:
-            raise serializers.ValidationError(USER_NOT_FOUND)
+        self.fetched_user = authenticate(username=username, password=password)
 
-        user_object = fetched[0]
-        if not check_password(password, user_object.password):
-            raise serializers.ValidationError(INVALID_PASSWORD)
-
-        self.fetched_user = user_object
+        if self.fetched_user is None:
+            raise serializers.ValidationError(INVALID_LOGIN)
 
         return login_data
 
@@ -269,7 +274,6 @@ class RegistrationSerializer(serializers.Serializer):
     class Meta:
         model = User
         fields = ('username', 'email', 'first_name', 'last_name', 'password')
-        write_only_fields = 'password'
 
     username = serializers.CharField(
         validators=[UniqueValidator(queryset=User.objects.all())]
@@ -277,9 +281,7 @@ class RegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField(
         validators=[UniqueValidator(queryset=User.objects.all())]
     )
-    first_name = serializers.CharField(max_length=30)
-    last_name = serializers.CharField(max_length=30)
-    password = serializers.CharField(max_length=128)
+    password = serializers.CharField(max_length=128, write_only=True)
 
     def validate_password(self, password):
         flag = False
@@ -298,16 +300,7 @@ class RegistrationSerializer(serializers.Serializer):
         return password
 
     def create(self, validated_data):
-        user = User.objects.create(
-            username=validated_data['username'],
-            email=validated_data['email'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
-            password=make_password(validated_data['password'])
-        )
-
-        user.save()
-        return user
+        return User.objects.create_user(**validated_data)
 
     def update(self, instance, validated_data):
         pass
