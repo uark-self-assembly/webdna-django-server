@@ -265,7 +265,10 @@ class TerminationView(generics.GenericAPIView):
         serialized_body = TerminateSerializer(data=kwargs)
         if serialized_body.is_valid():
             job = serialized_body.fetched_job
-            app.control.revoke(job.process_name, terminate=True)
+            try:
+                app.control.revoke(job.process_name, terminate=True)
+            except ConnectionResetError as exception:
+                print(exception)
             job.terminated = True
             job.finish_time = timezone.now()
             job.process_name = None

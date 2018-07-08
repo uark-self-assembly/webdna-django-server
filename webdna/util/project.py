@@ -71,7 +71,9 @@ def zip_project(project_id):
         with ZipFile(project_zip_path, 'w') as archive:
             for (dir_path, dir_names, file_names) in os.walk(project_folder_path):
                 file_names_len = len(file_names)
-                for i in range(0 , file_names_len):
+                for i in range(0, file_names_len):
+                    if '.zip' in file_names[i]:
+                        continue
                     archive.write(os.path.join(dir_path, file_names[i]), file_names[i])
         return project_zip_path
     return None
