@@ -166,7 +166,6 @@ AUTH_USER_MODEL = 'webdna.User'
 
 JWT_AUTH = {
     'JWT_VERIFY': True,
-    'JWT_VERIFY_EXPIRATION': True,
-    'JWT_EXPIRATION_DELTA': datetime.timedelta(seconds=3000),
+    'JWT_VERIFY_EXPIRATION': False,
     'JWT_AUTH_HEADER_PREFIX': 'Bearer'
 }
