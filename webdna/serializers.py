@@ -270,6 +270,8 @@ class RegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField(
         validators=[UniqueValidator(queryset=User.objects.all())]
     )
+    first_name = serializers.CharField(max_length=30)
+    last_name = serializers.CharField(max_length=30)
     password = serializers.CharField(max_length=128, write_only=True)
 
     def validate_password(self, password):
@@ -290,6 +292,7 @@ class RegistrationSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
+
 
     def update(self, instance, validated_data):
         pass
