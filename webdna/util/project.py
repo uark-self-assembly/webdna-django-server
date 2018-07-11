@@ -1,25 +1,36 @@
 import os
+import json
 import subprocess
 from webdna.defaults import ProjectFile
 import webdna.util.server as server
 from zipfile import ZipFile
 
 
-class Generation:
-    def __init__(self, method=None, arguments=None, orig=None):
-        if orig is None:
-            self.method = method
-            self.arguments = arguments
-            self.files = None
-            if method == 'generate-sa' or method == 'generate-folded':
-                self.files = 'sequence.txt'
-                self.arguments.append(self.files)
-            elif method == 'cadnano-interface':
-                self.files = 'cadnano-project.json'
-                self.arguments.insert(0, self.files)
+class Payload(object):
+    def __init__(self, file):
+        self.__dict__ = json.load(file)
 
-            if self.files is None:
-                raise ValueError('Value of method argument not valid')
+
+class Generation:
+    def __init__(self, method=None, arguments=None, orig=None, dictionary=None):
+        if orig is None:
+            if dictionary is None:
+                self.method = method
+                self.arguments = arguments
+                self.files = None
+                if method == 'generate-sa' or method == 'generate-folded':
+                    self.files = 'sequence.txt'
+                    self.arguments.append(self.files)
+                    self.arguments.insert(0, method + '.py')
+                elif method == 'cadnano-interface':
+                    self.files = 'cadnano-project.json'
+                    self.arguments.insert(0, self.files)
+                    self.arguments.insert(0, self.method + '.py')
+
+                if self.files is None:
+                    raise ValueError('Value of method argument not valid')
+            else:
+                self.load(dictionary)
         else:
             self.copy(orig)
 
@@ -27,6 +38,11 @@ class Generation:
         self.method = orig.method
         self.files = orig.files
         self.arguments = orig.arguments
+
+    def load(self, dictionary):
+        self.method = dictionary['method']
+        self.files = dictionary['files']
+        self.arguments = dictionary['arguments']
 
     def serializable(self):
         return {
@@ -46,6 +62,45 @@ class ProjectSettings:
             'name': self.name,
             'gen': self.gen.serializable()
         }
+
+
+def is_executable(project_id, regenerate, generation_settings):
+    input_file = server.get_project_file(project_id, ProjectFile.INPUT)
+
+    if not os.path.isfile(input_file):
+        return False
+
+    if generation_settings.method == 'generate-sa' or 'generate-folded':
+        if regenerate:
+            sequence_file = server.get_project_file(project_id, ProjectFile.SEQUENCE)
+            if os.path.isfile(sequence_file):
+                return True
+            else:
+                return False
+        else:
+            generated_top = server.get_project_file(project_id, ProjectFile.GENERATED_TOP)
+            generated_dat = server.get_project_file(project_id, ProjectFile.GENERATED_DAT)
+            if os.path.isfile(generated_dat) and os.path.isfile(generated_top):
+                return True
+            else:
+                return False
+    elif generation_settings.method == 'cadnano-interface':
+        if regenerate:
+            cadnano_project_file = server.get_project_file(project_id, ProjectFile.CADNANO)
+            if os.path.isfile(cadnano_project_file):
+                return True
+            else:
+                return False
+        else:
+            generated_top = server.get_project_file(project_id, ProjectFile.GENERATED_TOP)
+            generated_dat = server.get_project_file(project_id, ProjectFile.GENERATED_DAT)
+            if os.path.isfile(generated_dat) and os.path.isfile(generated_top):
+                return True
+            else:
+                return False
+    else:
+        return False
+
 
 
 def zip_simulation(project_id):

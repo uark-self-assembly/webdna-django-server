@@ -18,6 +18,9 @@ INVALID_FILE_TYPE = 'This file type is not supported'
 INPUT_GENERATED = 'input.txt was successfully generated'
 GENERATED_FILES = 'generated.top and generated.dat were successfully generated'
 INPUT_SETTINGS_INVALID = 'There are missing file paths in input.txt'
+INVALID_GENERATION_SETTINGS = 'Project generation settings not valid, valid values: ' \
+                              'generation_method: <generate-sa>|<generate-folded>|<cadnano-interface>, ' \
+                              'lattice_type (only required for cadnano-interface generation): <he>|<sq>'
 SCRIPT_CHAIN_NOT_FOUND = 'The requested script chain file does not exist in the project directory'
 SCRIPTS_NOT_FOUND = 'No script or script directory was found'
 SCRIPTS_ALREADY_EXISTS = 'The script already exists'

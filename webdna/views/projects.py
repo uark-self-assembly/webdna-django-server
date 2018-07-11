@@ -16,6 +16,7 @@ from webdna_django_server.celery import app
 from ..responses import *
 from ..serializers import *
 from ..util.jwt import *
+from ..util.project import Generation, Payload, is_executable
 
 
 # URL: api/projects/<uuid:project_id>/files/upload/
@@ -171,12 +172,18 @@ class SettingsView(generics.RetrieveUpdateAPIView):
 
         project_settings_serializer = ProjectSettingsSerializer(data=request.data)
         if project_settings_serializer.is_valid():
-            settings_data = project_settings_serializer.validated_data
+            settings_data = project_settings_serializer.validated_data.copy()
             project_id = settings_data['project_id']
+            settings_data.pop('generation_method', None)
+            settings_data.pop('lattice_type', None)
             input_file_status = file_util.generate_input_file(project_id, settings_data)
-            gen_args = [settings_data['box_size']]
             fetched_project = Project.objects.all().filter(id=project_id)[0]
-            generation_info = project_util.Generation(method='generate-sa', arguments=gen_args)
+
+            generation_info = project_util.Generation(
+                method=project_settings_serializer.validated_data['generation_method'],
+                arguments=project_settings_serializer.gen_args
+            )
+
             json_settings = project_util.ProjectSettings(project_name=fetched_project.name, generation=generation_info)
 
             with open(server.get_project_file(project_id, ProjectFile.JSON), 'w') as json_file:
@@ -220,25 +227,13 @@ class ExecutionView(generics.GenericAPIView):
             user_id = fetched_project[0].user_id
             project_folder_path = server.get_project_folder_path(project_id)
 
-            input_file = server.get_project_file(project_id, ProjectFile.INPUT)
-            sequence_file = server.get_project_file(project_id, ProjectFile.SEQUENCE)
-            generated_dat = server.get_project_file(project_id, ProjectFile.GENERATED_DAT)
-            generated_top = server.get_project_file(project_id, ProjectFile.GENERATED_TOP)
+            with open(server.get_project_file(project_id, ProjectFile.JSON), 'r') as json_file:
+                p = Payload(json_file)
+                generation = Generation(dictionary=p.__dict__['gen'])
 
             if os.path.isdir(project_folder_path):
-                is_project_executable = False
-
-                if regenerate and os.path.isfile(sequence_file):
-                    is_project_executable = True
-                else:
-                    if os.path.isfile(generated_dat) and os.path.isfile(generated_top):
-                        is_project_executable = True
-
-                if not os.path.isfile(input_file):
-                    is_project_executable = False
-
-                if is_project_executable:
-                    tasks.execute_sim.delay(job.id, job.project_id, user_id, regenerate)
+                if is_executable(project_id, regenerate, generation):
+                    tasks.execute_sim.delay(job.id, project_id, user_id, regenerate, generation.__dict__)
                     return ExecutionResponse.make()
                 else:
                     job.delete()

@@ -293,7 +293,6 @@ class RegistrationSerializer(serializers.Serializer):
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
 
-
     def update(self, instance, validated_data):
         pass
 
@@ -330,6 +329,7 @@ def randint():
 
 
 class ProjectSettingsSerializer(serializers.Serializer):
+    gen_args = []
 
     def validate(self, project_settings_data):
         project_id = project_settings_data['project_id']
@@ -340,6 +340,20 @@ class ProjectSettingsSerializer(serializers.Serializer):
             raise serializers.ValidationError(PROJECT_NOT_FOUND)
 
         project_path = os.path.join('server-data', 'server-projects', str(project_id))
+
+        # Settings for project json file:
+        json_settings_valid = False
+        if project_settings_data['generation_method'] == 'cadnano-interface':
+            if project_settings_data['lattice_type'] == 'he' or project_settings_data['lattice_type'] == 'sq':
+                json_settings_valid = True
+                self.gen_args = [project_settings_data['lattice_type'], str(project_settings_data['box_size'])]
+        elif project_settings_data['generation_method'] == 'generate-folded' or project_settings_data['generation_method'] == 'generate-sa':
+            json_settings_valid = True
+            self.gen_args = [str(project_settings_data['box_size'])]
+
+        if not json_settings_valid:
+            raise serializers.ValidationError(INVALID_GENERATION_SETTINGS)
+
 
         # If sequence dependence is to be used, set this to 0 and specify seq_dep_file.
         use_average_seq = project_settings_data['use_average_seq']
@@ -366,6 +380,10 @@ class ProjectSettingsSerializer(serializers.Serializer):
         return project_settings_data
 
     project_id = serializers.UUIDField()
+
+    # Project json file settings
+    generation_method = serializers.CharField(max_length=20, required=True)
+    lattice_type = serializers.CharField(max_length=2, default='')
 
     # Generation options
     box_size = serializers.IntegerField(min_value=1, default=20)  # box side

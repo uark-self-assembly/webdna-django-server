@@ -6,32 +6,81 @@ import webdna.util.server as server
 from webdna.defaults import ProjectFile
 
 
-def generate_sa(project_folder_path, box_size, log_file_path, sequence_file_name=defaults.DEFAULT_SEQUENCE_FILE_NAME):
+def generate_sa(project_folder_path, generation, log_file_path):
     log = None
     if log_file_path is not None:
         log = open(file=log_file_path, mode='w')
         process = subprocess.Popen(
-            [
-                'generate-sa.py',
-                str(box_size),
-                sequence_file_name
-            ],
-            cwd=os.path.join(os.getcwd(), project_folder_path),
-            stderr=log
+                args=generation['arguments'],
+                cwd=os.path.join(os.getcwd(), project_folder_path),
+                stderr=log
         )
     else:
         process = subprocess.Popen(
-            [
-                'generate-sa.py',
-                str(box_size),
-                sequence_file_name
-            ],
+            args=generation['arguments'],
             cwd=os.path.join(os.getcwd(), project_folder_path)
         )
 
     process.wait()
     if log_file_path is not None:
         log.close()
+
+    return True
+
+
+def generate_folded(project_folder_path, generation, log_file_path):
+    log = None
+    if log_file_path is not None:
+        log = open(file=log_file_path, mode='w')
+        process = subprocess.Popen(
+            generation['arguments'],
+            cwd=os.path.join(os.getcwd(), project_folder_path),
+            stderr=log
+        )
+    else:
+        process = subprocess.Popen(
+            generation['arguments'],
+            cwd=os.path.join(os.getcwd(), project_folder_path)
+        )
+
+    process.wait()
+    if log_file_path is not None:
+        log.close()
+
+    return True
+
+
+def generate_cadnano_interface(project_folder_path, generation, log_file_path):
+    log = None
+    if log_file_path is not None:
+        log = open(file=log_file_path, mode='w')
+        process = subprocess.Popen(
+            generation['arguments'],
+            cwd=os.path.join(os.getcwd(), project_folder_path),
+            stderr=log
+        )
+    else:
+        process = subprocess.Popen(
+            generation['arguments'],
+            cwd=os.path.join(os.getcwd(), project_folder_path)
+        )
+
+    process.wait()
+    if log_file_path is not None:
+        log.close()
+
+    if os.path.isfile(os.path.join(project_folder_path, 'prova.top')):
+        os.rename(os.path.join(project_folder_path, 'prova.top'), os.path.join(project_folder_path, 'generated.top'))
+    else:
+        return False
+
+    if os.path.isfile(os.path.join(project_folder_path, 'prova.conf')):
+        os.rename(os.path.join(project_folder_path, 'prova.conf'), os.path.join(project_folder_path), 'generated.dat')
+    else:
+        return False
+
+    if os.path.isfile(os.path.join(project_folder_path, 'virt2nuc')):
+        os.remove(os.path.join(project_folder_path, 'virt2nuc'))
 
     return True
 
