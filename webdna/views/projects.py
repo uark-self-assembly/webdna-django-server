@@ -369,6 +369,10 @@ class DuplicateProjectView(BaseProjectView):
 
             new_project.save()
 
+            original_project_settings = project_util.get_project_settings(original_project_id)
+            original_project_settings.name = new_project.name
+            project_util.save_project_settings(new_project.id, original_project_settings)
+
             project_serializer = ProjectSerializer(instance=new_project)
             return ObjectResponse.make(obj=project_serializer.data)
         else:
