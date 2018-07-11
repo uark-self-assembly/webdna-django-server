@@ -388,13 +388,13 @@ class DuplicateProjectView(generics.GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         self.check_object_permissions(request, self.get_object())
-        serialized_body = ProjectExistenceSerializer(data=request.data)
+        serialized_body = ProjectExistenceSerializer(data=kwargs)
         if serialized_body.is_valid():
             new_project = Project()
             new_project.name = 'Duplicate of ' + serialized_body.fetched_project.name
             new_project.user_id = serialized_body.fetched_project.user_id
 
-            original_project_id = serialized_body.validated_data['id']
+            original_project_id = serialized_body.validated_data['project_id']
             original_project_folder_path = server.get_project_folder_path(original_project_id)
             duplicated_project_folder_path = server.get_project_folder_path(new_project.id)
 
