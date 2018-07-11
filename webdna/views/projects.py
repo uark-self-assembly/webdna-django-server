@@ -1,22 +1,24 @@
 import shutil
-import json
+
+import webdna.tasks as tasks
+import webdna.util.file as file_util
+import webdna.util.project as project_util
+
 from distutils.dir_util import copy_tree
 
 from django.http import HttpResponse
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
+from typing import Dict
 
-import webdna.tasks as tasks
-import webdna.util.file as file_util
-import webdna.util.project as project_util
-from webdna.defaults import ProjectFile
 from webdna_django_server.celery import app
-from ..responses import *
-from ..serializers import *
-from ..util.jwt import *
-from ..util.project import Generation, Payload, is_executable
+
+from webdna.defaults import ProjectFile
+from webdna.responses import *
+from webdna.serializers import *
+from webdna.util.jwt import *
 
 
 # URL: api/projects/<uuid:project_id>/files/upload/
@@ -91,10 +93,9 @@ class ProjectList(generics.CreateAPIView, generics.ListAPIView):
     def post(self, request, *args, **kwargs):
         response = generics.CreateAPIView.post(self, request, args, kwargs)
         fetched_projects = Project.objects.all().filter(id=response.data['id'])
-        project_id = fetched_projects[0].id
+        project = fetched_projects[0]
+        project_util.initialize_project(project)
 
-        project_folder_path = server.get_analysis_folder_path(project_id)
-        os.makedirs(project_folder_path, exist_ok=True)
         return ObjectResponse.make(response=response)
 
 
@@ -144,13 +145,21 @@ class ProjectView(generics.RetrieveUpdateDestroyAPIView):
         return ObjectResponse.make(response=response)
 
 
-# /api/projects/<uuid:project_id>/settings/
-class SettingsView(generics.RetrieveUpdateAPIView):
-    permission_classes = [IsAuthenticated, IsProjectOwner, ]
+class BaseProjectView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated, IsProjectOwner]
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
     lookup_field = 'id'
     lookup_url_kwarg = 'project_id'
+
+
+# /api/projects/<uuid:project_id>/settings/
+class SettingsView(BaseProjectView, generics.RetrieveUpdateAPIView):
+
+    @staticmethod
+    def clean_settings_dictionary(settings_dictionary: Dict):
+        settings_dictionary.pop('generation_method', None)
+        settings_dictionary.pop('lattice_type', None)
 
     def get(self, request, *args, **kwargs):
         self.check_object_permissions(request, self.get_object())
@@ -168,26 +177,23 @@ class SettingsView(generics.RetrieveUpdateAPIView):
 
     def put(self, request, *args, **kwargs):
         self.check_object_permissions(request, self.get_object())
-        request.data['project_id'] = kwargs['project_id']
+        project_id = kwargs['project_id']
+        request.data['project_id'] = project_id
 
         project_settings_serializer = ProjectSettingsSerializer(data=request.data)
         if project_settings_serializer.is_valid():
-            settings_data = project_settings_serializer.validated_data.copy()
-            project_id = settings_data['project_id']
-            settings_data.pop('generation_method', None)
-            settings_data.pop('lattice_type', None)
+            settings_data: Dict = project_settings_serializer.validated_data.copy()
+            SettingsView.clean_settings_dictionary(settings_data)
+
             input_file_status = file_util.generate_input_file(project_id, settings_data)
-            fetched_project = Project.objects.all().filter(id=project_id)[0]
 
-            generation_info = project_util.Generation(
+            project_generation = project_util.Generation(
                 method=project_settings_serializer.validated_data['generation_method'],
-                arguments=project_settings_serializer.gen_args
-            )
+                arguments=project_settings_serializer.gen_args)
 
-            json_settings = project_util.ProjectSettings(project_name=fetched_project.name, generation=generation_info)
-
-            with open(server.get_project_file(project_id, ProjectFile.JSON), 'w') as json_file:
-                json.dump(json_settings.serializable(), json_file)
+            existing_project_settings = project_util.get_project_settings(project_id)
+            existing_project_settings.generation = project_generation
+            project_util.save_project_settings(project_id, existing_project_settings)
 
             if input_file_status == MISSING_PROJECT_FILES:
                 return ErrorResponse.make(
@@ -200,12 +206,7 @@ class SettingsView(generics.RetrieveUpdateAPIView):
 
 
 # /api/projects/<uuid:project_id>/simulation/execute/
-class ExecutionView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated, IsProjectOwner, ]
-    queryset = Project.objects.all()
-    serializer_class = ProjectSerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'project_id'
+class ExecutionView(BaseProjectView):
 
     def get(self, request, *args, **kwargs):
         self.check_object_permissions(request, self.get_object())
@@ -223,22 +224,17 @@ class ExecutionView(generics.GenericAPIView):
 
             project_id = serialized_body.validated_data['project_id']
             regenerate = serialized_body.validated_data['regenerate']
-            fetched_project = Project.objects.all().filter(id=project_id)
-            user_id = fetched_project[0].user_id
+
             project_folder_path = server.get_project_folder_path(project_id)
 
-            with open(server.get_project_file(project_id, ProjectFile.JSON), 'r') as json_file:
-                p = Payload(json_file)
-                generation = Generation(dictionary=p.__dict__['gen'])
-
             if os.path.isdir(project_folder_path):
-                if is_executable(project_id, regenerate, generation):
-                    tasks.execute_sim.delay(job.id, project_id, user_id, regenerate, generation.__dict__)
+                if project_util.is_executable(project_id, regenerate):
+                    tasks.execute_sim.delay(job.id, project_id, request.user.id, regenerate)
                     return ExecutionResponse.make()
                 else:
                     job.delete()
-                    return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                                              message='Unable to execute specified simulation')
+                    return ErrorResponse.make(status=status.HTTP_409_CONFLICT,
+                                              message='Missing required oxDNA files')
             else:
                 job.delete()
                 return ErrorResponse.make(status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -248,12 +244,7 @@ class ExecutionView(generics.GenericAPIView):
 
 
 # URL: /api/projects/<uuid:project_id>/simulation/terminate/
-class TerminationView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated, IsProjectOwner, ]
-    queryset = Project.objects.all()
-    serializer_class = ProjectSerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'project_id'
+class TerminationView(BaseProjectView):
 
     def get(self, request, *args, **kwargs):
         self.check_object_permissions(request, self.get_object())
@@ -264,6 +255,7 @@ class TerminationView(generics.GenericAPIView):
                 app.control.revoke(job.process_name, terminate=True)
             except ConnectionResetError as exception:
                 print(exception)
+
             job.terminated = True
             job.finish_time = timezone.now()
             job.process_name = None
@@ -274,12 +266,7 @@ class TerminationView(generics.GenericAPIView):
 
 
 # URL: /api/projects/<uuid:project_id>/current-output/
-class OutputView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated, IsProjectOwner, ]
-    queryset = Project.objects.all()
-    serializer_class = ProjectSerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'project_id'
+class OutputView(BaseProjectView):
 
     def get(self, request, *args, **kwargs):
         self.check_object_permissions(request, self.get_object())
@@ -307,12 +294,7 @@ class OutputView(generics.GenericAPIView):
 
 
 # URL: api/projects/<uuid:project_id>/files/download/<string:file_type>/
-class DownloadProjectFileView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated, IsProjectOwner, ]
-    queryset = Project.objects.all()
-    serializer_class = ProjectSerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'project_id'
+class DownloadProjectFileView(BaseProjectView):
 
     def get(self, request, *args, **kwargs):
         self.check_object_permissions(request, self.get_object())
@@ -327,12 +309,7 @@ class DownloadProjectFileView(generics.GenericAPIView):
 
 
 # URL: /api/projects/<uuid:project_id>/files/trajectory/
-class GenerateVisualizationView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated, IsProjectOwner, ]
-    queryset = Project.objects.all()
-    serializer_class = ProjectSerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'project_id'
+class GenerateVisualizationView(BaseProjectView):
 
     def get(self, request, *args, **kwargs):
         self.check_object_permissions(request, self.get_object())
@@ -354,12 +331,7 @@ class GenerateVisualizationView(generics.GenericAPIView):
 
 
 # URL: api/projects/<uuid:project_id>/files/zip/
-class ProjectZipView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated, IsProjectOwner, ]
-    queryset = Project.objects.all()
-    serializer_class = ProjectSerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'project_id'
+class ProjectZipView(BaseProjectView):
 
     def get(self, request, *args, **kwargs):
         self.check_object_permissions(request, self.get_object())
@@ -379,12 +351,7 @@ class ProjectZipView(generics.GenericAPIView):
 
 
 # URL: api/projects/<uuid:project_id>/duplicate/
-class DuplicateProjectView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated, IsProjectOwner, ]
-    queryset = Project.objects.all()
-    serializer_class = ProjectSerializer
-    lookup_field = 'id'
-    lookup_url_kwarg = 'project_id'
+class DuplicateProjectView(BaseProjectView):
 
     def get(self, request, *args, **kwargs):
         self.check_object_permissions(request, self.get_object())

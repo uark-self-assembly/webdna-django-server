@@ -1,23 +1,23 @@
 import os
 import subprocess
 
-import webdna.defaults as defaults
 import webdna.util.server as server
 from webdna.defaults import ProjectFile
+from webdna.util.project import Generation
 
 
-def generate_sa(project_folder_path, generation, log_file_path):
+def generate_sa(project_folder_path: str, generation: Generation, log_file_path: str) -> bool:
     log = None
     if log_file_path is not None:
         log = open(file=log_file_path, mode='w')
         process = subprocess.Popen(
-                args=generation['arguments'],
+                args=generation.arguments,
                 cwd=os.path.join(os.getcwd(), project_folder_path),
                 stderr=log
         )
     else:
         process = subprocess.Popen(
-            args=generation['arguments'],
+            args=generation.arguments,
             cwd=os.path.join(os.getcwd(), project_folder_path)
         )
 
@@ -28,18 +28,18 @@ def generate_sa(project_folder_path, generation, log_file_path):
     return True
 
 
-def generate_folded(project_folder_path, generation, log_file_path):
+def generate_folded(project_folder_path: str, generation: Generation, log_file_path: str) -> bool:
     log = None
     if log_file_path is not None:
         log = open(file=log_file_path, mode='w')
         process = subprocess.Popen(
-            generation['arguments'],
+            generation.arguments,
             cwd=os.path.join(os.getcwd(), project_folder_path),
             stderr=log
         )
     else:
         process = subprocess.Popen(
-            generation['arguments'],
+            generation.arguments,
             cwd=os.path.join(os.getcwd(), project_folder_path)
         )
 
@@ -50,18 +50,18 @@ def generate_folded(project_folder_path, generation, log_file_path):
     return True
 
 
-def generate_cadnano_interface(project_folder_path, generation, log_file_path):
+def generate_cadnano_interface(project_folder_path: str, generation: Generation, log_file_path: str) -> bool:
     log = None
     if log_file_path is not None:
         log = open(file=log_file_path, mode='w')
         process = subprocess.Popen(
-            generation['arguments'],
+            generation.arguments,
             cwd=os.path.join(os.getcwd(), project_folder_path),
             stderr=log
         )
     else:
         process = subprocess.Popen(
-            generation['arguments'],
+            generation.arguments,
             cwd=os.path.join(os.getcwd(), project_folder_path)
         )
 
@@ -75,7 +75,7 @@ def generate_cadnano_interface(project_folder_path, generation, log_file_path):
         return False
 
     if os.path.isfile(os.path.join(project_folder_path, 'prova.conf')):
-        os.rename(os.path.join(project_folder_path, 'prova.conf'), os.path.join(project_folder_path), 'generated.dat')
+        os.rename(os.path.join(project_folder_path, 'prova.conf'), os.path.join(project_folder_path, 'generated.dat'))
     else:
         return False
 
@@ -85,7 +85,7 @@ def generate_cadnano_interface(project_folder_path, generation, log_file_path):
     return True
 
 
-def convert_dat_to_pdb(project_id):
+def convert_dat_to_pdb(project_id: str) -> bool:
     if not server.project_file_exists(project_id, ProjectFile.TRAJECTORY_DAT) \
             or not server.project_file_exists(project_id, ProjectFile.GENERATED_TOP):
         return False

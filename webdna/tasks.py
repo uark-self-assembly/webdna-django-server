@@ -5,21 +5,25 @@ import subprocess
 import shutil
 import runpy
 import sys
-from webdna.models import *
-from webdna_django_server.celery import app
+
 import webdna.messages as messages
 import webdna.util.oxdna as oxdna
 import webdna.util.server as server
 import webdna.util.project as project_util
-import webdna.util.file as file_util
+
+from webdna.models import *
+from webdna_django_server.celery import app
+
 from webdna.defaults import ProjectFile, AnalysisFile
 
 
 @app.task()
-def generate_initial_configuration(project_id, generation, log_file_path):
+def generate_initial_configuration(project_id: str, log_file_path: str) -> str:
     project_folder_path = server.get_project_folder_path(project_id)
+    project_settings = project_util.get_project_settings(project_id)
+    generation = project_settings.generation
 
-    if generation['method'] == 'generate-sa':
+    if generation.method == 'generate-sa':
         if not server.project_file_exists(project_id, ProjectFile.SEQUENCE):
             return messages.MISSING_PROJECT_FILES
 
@@ -27,7 +31,7 @@ def generate_initial_configuration(project_id, generation, log_file_path):
             return messages.INTERNAL_ERROR
         else:
             return messages.GENERATED_FILES
-    elif generation['method'] == 'generate-folded':
+    elif generation.method == 'generate-folded':
         if not server.project_file_exists(project_id, ProjectFile.SEQUENCE):
             return messages.MISSING_PROJECT_FILES
 
@@ -35,7 +39,7 @@ def generate_initial_configuration(project_id, generation, log_file_path):
             return messages.INTERNAL_ERROR
         else:
             return messages.GENERATED_FILES
-    elif generation['method'] == 'cadnano-interface':
+    elif generation.method == 'cadnano-interface':
         if not server.project_file_exists(project_id, ProjectFile.CADNANO):
             return messages.MISSING_PROJECT_FILES
 
@@ -48,7 +52,7 @@ def generate_initial_configuration(project_id, generation, log_file_path):
 
 
 @app.task()
-def execute_sim(job_id, project_id, user_id, should_regenerate, generation, fresh_execution=True):
+def execute_sim(job_id: str, project_id: str, user_id: str, should_regenerate: bool, fresh_execution=True):
     job = Job(
         id=job_id, process_name=execute_sim.request.id, start_time=timezone.now(), finish_time=None, terminated=False)
     job.save(update_fields=['process_name', 'start_time', 'finish_time', 'terminated'])
@@ -62,9 +66,7 @@ def execute_sim(job_id, project_id, user_id, should_regenerate, generation, fres
 
     if should_regenerate:
         print("Regenerating topology for project: " + project_id)
-        input_data = file_util.parse_input_file(project_id)
-        box_size = input_data['box_size']
-        generate_initial_configuration(project_id, generation, stdout_file_path)
+        generate_initial_configuration(project_id, stdout_file_path)
 
     print("Received new execution for project: " + project_id)
 
@@ -87,7 +89,7 @@ def execute_sim(job_id, project_id, user_id, should_regenerate, generation, fres
 
 
 @app.task()
-def execute_output_analysis(project_id, user_id):
+def execute_output_analysis(project_id: str, user_id: str):
     script_chain_file_path = server.get_project_file(project_id, ProjectFile.SCRIPT_CHAIN)
     if not os.path.isfile(script_chain_file_path):
         return

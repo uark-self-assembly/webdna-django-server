@@ -3,10 +3,12 @@ import os
 import webdna.defaults as defaults
 import webdna.messages as messages
 import webdna.util.server as server
+
 from webdna.defaults import ProjectFile
+from typing import Dict, Union
 
 
-def generate_input_file(project_id, data):
+def generate_input_file(project_id: str, data: Union[Dict, object]):
     project_folder_path = server.get_project_folder_path(project_id)
     sequence_path = os.path.join(project_folder_path, defaults.DEFAULT_SEQUENCE_FILE_NAME)
     input_path = os.path.join(project_folder_path, defaults.DEFAULT_INPUT_FILE_NAME)
@@ -30,7 +32,7 @@ def generate_input_file(project_id, data):
     return messages.INPUT_GENERATED
 
 
-def parse_input_file(project_id):
+def parse_input_file(project_id: str) -> Union[str, Dict]:
     input_file_path = server.get_project_file(project_id, ProjectFile.INPUT)
 
     if not os.path.isfile(input_file_path):
@@ -47,7 +49,12 @@ def parse_input_file(project_id):
     return input_dictionary
 
 
-def get_file_contents_as_string(file_path):
+def write_string_to_file(string_value: str, file_path: str):
+    with open(file=file_path, mode='w') as file:
+        file.write(string_value)
+
+
+def get_file_contents_as_string(file_path: str) -> str:
     with open(file=file_path, mode='r') as file:
         files_contents_string = file.read()
 

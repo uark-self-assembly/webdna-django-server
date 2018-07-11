@@ -354,7 +354,6 @@ class ProjectSettingsSerializer(serializers.Serializer):
         if not json_settings_valid:
             raise serializers.ValidationError(INVALID_GENERATION_SETTINGS)
 
-
         # If sequence dependence is to be used, set this to 0 and specify seq_dep_file.
         use_average_seq = project_settings_data['use_average_seq']
         if not use_average_seq or int(use_average_seq) == 0:
