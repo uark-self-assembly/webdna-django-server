@@ -1,9 +1,10 @@
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from ..responses import *
 from ..serializers import *
+from webdna.util import user as user_util
 
 
 # URL: /api/users/
@@ -50,3 +51,53 @@ class RegistrationView(APIView):
             return RegistrationResponse.make(created_user, serialized_user.data)
         else:
             return ErrorResponse.make(errors=serialized_body.errors)
+
+
+# URL: /api/users/profile
+class ProfileView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated, ]
+    serializer_class = UserProfileSerializer
+
+    def get(self, request, *args, **kwargs):
+        profile = {
+            'id': request.user.id,
+            'username': request.user.username,
+            'email': request.user.email,
+            'first_name': request.user.first_name,
+            'last_name': request.user.last_name
+        }
+        return ObjectResponse.make(profile)
+
+    def put(self, request, *args, **kwargs):
+        serialized_body = UserProfileSerializer(data=request.data)
+        if serialized_body.is_valid():
+            updated_user = user_util.update_user(request.user.id, serialized_body.validated_data)
+            profile = {
+                'id': updated_user.id,
+                'username': updated_user.username,
+                'email': updated_user.email,
+                'first_name': updated_user.first_name,
+                'last_name': updated_user.last_name
+            }
+            return ObjectResponse.make(profile)
+        else:
+            return ErrorResponse.make(errors=serialized_body.errors)
+
+
+class ChangePasswordView(generics.UpdateAPIView):
+    serializer_class = ChangePasswordSerializer
+    permission_classes = [IsAuthenticated, ]
+
+    def post(self, request, *args, **kwargs):
+        request_data = request.data.copy()
+        request_data['user_id'] = request.user.id
+        serializer = self.get_serializer(data=request_data)
+
+        if serializer.is_valid():
+            request.user.set_password(serializer.data.get("new_password"))
+            request.user.save()
+            return ObjectResponse.make()
+        else:
+            return ErrorResponse.make(errors=serializer.errors)
+
+

@@ -30,6 +30,8 @@ urlpatterns = [
     path('api/users/', users.UserView.as_view()),
     path('api/users/login/', users.LoginView.as_view()),
     path('api/users/register/', users.RegistrationView.as_view()),
+    path('api/users/profile/', users.ProfileView.as_view()),
+    path('api/users/change-password/', users.ChangePasswordView.as_view()),
 
     # /scripts
     path('api/scripts/', scripts.ScriptList.as_view()),

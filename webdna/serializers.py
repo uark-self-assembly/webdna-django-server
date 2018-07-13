@@ -591,3 +591,50 @@ class ScriptChainRequestSerializer(serializers.Serializer):
 
     def update(self, instance, validated_data):
         pass
+
+
+class UserProfileSerializer(serializers.Serializer):
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name')
+
+    username = serializers.CharField(
+        required=False,
+        validators=[UniqueValidator(queryset=User.objects.all())]
+        )
+    email = serializers.EmailField(
+        required=False,
+        validators=[UniqueValidator(queryset=User.objects.all())]
+        )
+
+    first_name = serializers.CharField(max_length=30, required=False)
+    last_name = serializers.CharField(max_length=30, required=False)
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+    user_id = serializers.UUIDField()
+
+    def validate_new_password(self, new_password):
+        flag = False
+        if len(str(new_password)) < 8:
+            flag = True
+        elif re.search('[0-9]', str(new_password)) is None:
+            flag = True
+        elif re.search('[a-z]', str(new_password)) is None:
+            flag = True
+        elif re.search('[A-Z]', str(new_password)) is None:
+            flag = True
+
+        if flag:
+            raise serializers.ValidationError(INVALID_PASSWORD_FORMAT)
+
+        return new_password
+
+    def validate(self, data):
+        user = User.objects.all().filter(id=data['user_id'])[0]
+        if not user.check_password(data['old_password']):
+            raise serializers.ValidationError(INVALID_PASSWORD)
+
+        return data

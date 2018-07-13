@@ -1,7 +1,7 @@
 INVALID_BODY = 'Please fill all fields'
 INTERNAL_ERROR = 'Internal server error'
 USER_NOT_FOUND = 'No user found with this username'
-INVALID_PASSWORD = 'Invalid password for username'
+INVALID_PASSWORD = 'Invalid password'
 INVALID_LOGIN = 'Provided username or password invalid'
 USERNAME_TAKEN = 'Provided username is already registered'
 WEAK_PASSWORD = 'Provided password is too weak'
