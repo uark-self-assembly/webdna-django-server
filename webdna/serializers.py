@@ -486,6 +486,14 @@ class ScriptChainSerializer(serializers.Serializer):
         if not fetched:
             raise serializers.ValidationError(PROJECT_NOT_FOUND)
 
+        self.fetched_project = fetched[0]
+        scripts = [x.strip() for x in data['script_list'].split(',')]
+
+        for script in scripts:
+            fetched_script = Script.objects.all().filter(id=script)
+            if not fetched_script:
+                raise serializers.ValidationError(CHAIN_SCRIPT_NOT_FOUND)
+
         return data
 
     def create(self, validated_data):
@@ -573,9 +581,6 @@ class ScriptChainRequestSerializer(serializers.Serializer):
         fetched = query_set.filter(id=project_id)
         if not fetched:
             raise serializers.ValidationError(PROJECT_NOT_FOUND)
-
-        if not os.path.isfile(os.path.join('server-data', 'server-projects', str(project_id), 'scriptchain.txt')):
-            raise serializers.ValidationError(SCRIPT_CHAIN_NOT_FOUND)
 
         self.fetched_project = fetched[0]
         self.project_id = project_id

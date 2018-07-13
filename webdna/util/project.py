@@ -45,12 +45,16 @@ class Generation:
 
 
 class ProjectSettings:
-    def __init__(self, name: str, generation: Optional[Generation]):
+    def __init__(self, name: str, generation: Optional[Generation] = None, script_chain: Optional[str] = None):
         self.name = name
         if generation:
             self.generation = Generation(orig=generation)
         else:
             self.generation = None
+        if script_chain:
+            self.script_chain = script_chain
+        else:
+            self.script_chain = None
 
 
 def get_project_settings(project_id: str) -> ProjectSettings:

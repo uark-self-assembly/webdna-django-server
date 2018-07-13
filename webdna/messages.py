@@ -21,6 +21,6 @@ INPUT_SETTINGS_INVALID = 'You are missing one or more secondary files needed by 
 INVALID_GENERATION_SETTINGS = 'Project generation settings not valid, valid values: ' \
                               'generation_method: <generate-sa>|<generate-folded>|<cadnano-interface>, ' \
                               'lattice_type (only required for cadnano-interface generation): <he>|<sq>'
-SCRIPT_CHAIN_NOT_FOUND = 'The requested script chain file does not exist in the project directory'
+CHAIN_SCRIPT_NOT_FOUND = 'The script specified in the script_chain field was not found'
 SCRIPTS_NOT_FOUND = 'No script or script directory was found'
 SCRIPTS_ALREADY_EXISTS = 'The script already exists'

@@ -90,24 +90,20 @@ def execute_sim(job_id: str, project_id: str, user_id: str, should_regenerate: b
 
 @app.task()
 def execute_output_analysis(project_id: str, user_id: str):
-    script_chain_file_path = server.get_project_file(project_id, ProjectFile.SCRIPT_CHAIN)
-    if not os.path.isfile(script_chain_file_path):
+    project_settings = project_util.get_project_settings(project_id)
+    if len(project_settings.script_chain) == 0:
         return
 
     print("Running analysis scripts for project: " + project_id)
 
-    with open(script_chain_file_path, mode='r') as script_chain:
-        script_string = script_chain.readline()
-
-    if len(script_string) == 0:
-        return
-
-    scripts = [x.strip() for x in script_string.split(',')]
+    scripts = [x.strip() for x in project_settings.script_chain.split(',')]
 
     analysis_folder_path = server.get_analysis_folder_path(project_id)
 
     for script in scripts:
-        script_file_path = server.get_user_script(user_id, script)
+        fetched_script = Script.objects.all().filter(id=script)[0]
+        script_name = fetched_script.file_name
+        script_file_path = server.get_user_script(user_id, script_name)
         shutil.copy2(script_file_path, analysis_folder_path)
 
     analysis_log_file_path = server.get_analysis_file_path(project_id, AnalysisFile.LOG)

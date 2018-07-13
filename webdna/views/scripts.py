@@ -6,6 +6,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 
 import webdna.tasks as tasks
 from webdna.defaults import ProjectFile, AnalysisFile
+from webdna.util.project import get_project_settings, save_project_settings
 from ..responses import *
 from ..serializers import *
 from ..util.jwt import *
@@ -153,9 +154,8 @@ class ScriptChainView(generics.GenericAPIView):
         if serialized_body.is_valid():
 
             project_id = str(serialized_body.project_id)
-            script_chain_file_path = server.get_project_file(project_id, ProjectFile.SCRIPT_CHAIN)
-            with open(script_chain_file_path, 'rb') as script_chain:
-                response = script_chain.readlines()
+            project_settings = get_project_settings(project_id)
+            response = project_settings.script_chain
 
             return ObjectResponse.make(obj=response)
         else:
@@ -164,16 +164,17 @@ class ScriptChainView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         self.check_object_permissions(self.request, self.get_object())
         request_data = {
-             'project_id': kwargs['project_id']
+            'project_id': kwargs['project_id'],
+            'script_list': request.data.get('script_list', None)
         }
         serialized_body = ScriptChainSerializer(data=request_data)
         if serialized_body.is_valid():
             project_id = serialized_body.validated_data['project_id']
-            script_chain_file_path = server.get_project_file(project_id, ProjectFile.SCRIPT_CHAIN)
+            project_settings = get_project_settings(project_id)
             script_list = serialized_body.validated_data['script_list']
 
-            with open(script_chain_file_path, 'w') as script_chain:
-                script_chain.write(script_list)
+            project_settings.script_chain = script_list
+            save_project_settings(project_id, project_settings)
 
             return DefaultResponse.make()
         else:
