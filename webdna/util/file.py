@@ -10,13 +10,9 @@ from typing import Dict, Union
 
 def generate_input_file(project_id: str, data: Union[Dict, object]):
     project_folder_path = server.get_project_folder_path(project_id)
-    sequence_path = os.path.join(project_folder_path, defaults.DEFAULT_SEQUENCE_FILE_NAME)
     input_path = os.path.join(project_folder_path, defaults.DEFAULT_INPUT_FILE_NAME)
 
     os.makedirs(project_folder_path, exist_ok=True)
-
-    if not os.path.isfile(sequence_path):
-        return messages.MISSING_PROJECT_FILES
 
     input_file = open(file=input_path, mode='w')
     for key, value in data.items():

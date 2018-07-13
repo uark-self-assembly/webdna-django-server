@@ -17,7 +17,7 @@ MISSING_PROJECT_FILES = 'Necessary project files are missing'
 INVALID_FILE_TYPE = 'This file type is not supported'
 INPUT_GENERATED = 'input.txt was successfully generated'
 GENERATED_FILES = 'generated.top and generated.dat were successfully generated'
-INPUT_SETTINGS_INVALID = 'There are missing file paths in input.txt'
+INPUT_SETTINGS_INVALID = 'You are missing one or more secondary files needed by this configuration'
 INVALID_GENERATION_SETTINGS = 'Project generation settings not valid, valid values: ' \
                               'generation_method: <generate-sa>|<generate-folded>|<cadnano-interface>, ' \
                               'lattice_type (only required for cadnano-interface generation): <he>|<sq>'

@@ -51,7 +51,8 @@ urlpatterns = [
 
     # /projects/{id}/files
     path('api/projects/<uuid:project_id>/files/upload/', projects.FileUploadView.as_view()),
-    path('api/projects/<uuid:project_id>/files/download/<str:file_type>/', projects.DownloadProjectFileView.as_view()),
+    path('api/projects/<uuid:project_id>/files/<str:file_type>/download/', projects.DownloadProjectFileView.as_view()),
+    path('api/projects/<uuid:project_id>/files/<str:file_type>/check/', projects.CheckProjectFileView.as_view()),
     path('api/projects/<uuid:project_id>/files/zip/', projects.ProjectZipView.as_view())
 ]
 

@@ -11,11 +11,11 @@ from rest_framework import generics
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.filters import OrderingFilter
 from typing import Dict
 
 from webdna_django_server.celery import app
 
-from webdna.defaults import ProjectFile
 from webdna.responses import *
 from webdna.serializers import *
 from webdna.util.jwt import *
@@ -64,6 +64,8 @@ class FileUploadView(generics.GenericAPIView):
 class ProjectList(generics.CreateAPIView, generics.ListAPIView):
     permission_classes = [IsAuthenticated, ]
     serializer_class = ProjectSerializer
+    filter_backends = (OrderingFilter,)
+    ordering = ('-created_on', )
 
     def get_queryset(self):
         user = self.request.user
@@ -169,7 +171,7 @@ class SettingsView(BaseProjectView, generics.RetrieveUpdateAPIView):
 
             input_data = file_util.parse_input_file(project_id)
             if input_data == MISSING_PROJECT_FILES:
-                return ErrorResponse.make(status.HTTP_500_INTERNAL_SERVER_ERROR, message=MISSING_PROJECT_FILES)
+                return ObjectResponse.make(obj={})
 
             return ObjectResponse.make(obj=input_data)
         else:
@@ -178,6 +180,7 @@ class SettingsView(BaseProjectView, generics.RetrieveUpdateAPIView):
     def put(self, request, *args, **kwargs):
         self.check_object_permissions(request, self.get_object())
         project_id = kwargs['project_id']
+
         request.data['project_id'] = project_id
 
         project_settings_serializer = ProjectSettingsSerializer(data=request.data)
@@ -293,7 +296,7 @@ class OutputView(BaseProjectView):
             return ErrorResponse.make(errors=serialized_body.errors)
 
 
-# URL: api/projects/<uuid:project_id>/files/download/<string:file_type>/
+# URL: api/projects/<uuid:project_id>/files/<str:file_type>/download/
 class DownloadProjectFileView(BaseProjectView):
 
     def get(self, request, *args, **kwargs):
@@ -301,9 +304,44 @@ class DownloadProjectFileView(BaseProjectView):
         serialized_body = FileSerializer(data=kwargs)
         if serialized_body.is_valid():
             project_id = serialized_body.validated_data['project_id']
-            project_file = serialized_body.project_file
-            project_file_path = server.get_project_file(project_id, project_file)
-            return file_util.get_file_contents_as_string(project_file_path)
+            file_type_string = serialized_body.validated_data['file_type']
+
+            try:
+                file_type = FileType[file_type_string].value
+            except:
+                return ErrorResponse.make(message='Invalid file type')
+
+            if not server.project_file_exists(project_id, file_type):
+                return ErrorResponse.make(status=http_status.HTTP_404_NOT_FOUND)
+
+            project_file_path = server.get_project_file(project_id, file_type)
+
+            with open(project_file_path, 'r') as project_file:
+                response = HttpResponse(project_file, content_type='text/plain')
+                response['Content-Disposition'] = 'attachment; filename="project.zip"'
+
+            return response
+        else:
+            return ErrorResponse.make(errors=serialized_body.errors)
+
+
+# URL: api/projects/<uuid:project_id>/files/<str:file_type>/check/
+class CheckProjectFileView(BaseProjectView):
+
+    def get(self, request, *args, **kwargs):
+        self.check_object_permissions(request, self.get_object())
+        serialized_body = FileSerializer(data=kwargs)
+        if serialized_body.is_valid():
+            project_id = serialized_body.validated_data['project_id']
+            file_type_string = serialized_body.validated_data['file_type']
+
+            try:
+                file_type = FileType[file_type_string].value
+            except:
+                return ErrorResponse.make(message='Invalid file type')
+
+            file_exists = server.project_file_exists(project_id, file_type)
+            return ObjectResponse.make(obj=file_exists)
         else:
             return ErrorResponse.make(errors=serialized_body.errors)
 

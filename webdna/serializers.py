@@ -6,10 +6,11 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
-from .models import *
-from .messages import *
-from .defaults import FileType
 import webdna.util.server as server
+
+from webdna.models import *
+from webdna.messages import *
+from webdna.defaults import FileType, ProjectFile
 
 
 class UserOutputRequestSerializer(serializers.Serializer):
@@ -140,29 +141,6 @@ class ScriptUploadSerializer(serializers.Serializer):
         return script_data
 
 
-class FileSerializer(ExecutionSerializer):
-    file_type = serializers.CharField(max_length=128)
-    project_file = None
-
-    def validate(self, execution_data):
-        try:
-            validated_execution_data = ExecutionSerializer.validate(self, execution_data)
-        except serializers.ValidationError as error:
-            raise error
-
-        project_id = validated_execution_data['project_id']
-        file_type_string = validated_execution_data['file_type']
-        try:
-            self.project_file = FileType[file_type_string].value
-        except KeyError:
-            raise serializers.ValidationError(INVALID_FILE_TYPE)
-
-        if not server.project_file_exists(project_id, self.project_file):
-            raise serializers.ValidationError(MISSING_PROJECT_FILES)
-
-        return execution_data
-
-
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -259,6 +237,29 @@ class ProjectExistenceSerializer(serializers.Serializer):
         return data
 
 
+class FileSerializer(ProjectExistenceSerializer):
+    file_type = serializers.CharField(max_length=128)
+    project_file = None
+
+    def validate(self, execution_data):
+        try:
+            validated_execution_data = ProjectExistenceSerializer.validate(self, execution_data)
+        except serializers.ValidationError as error:
+            raise error
+
+        project_id = validated_execution_data['project_id']
+        file_type_string = validated_execution_data['file_type']
+        try:
+            self.project_file = FileType[file_type_string].value
+        except KeyError:
+            raise serializers.ValidationError(INVALID_FILE_TYPE)
+
+        if not server.project_file_exists(project_id, self.project_file):
+            raise serializers.ValidationError(MISSING_PROJECT_FILES)
+
+        return execution_data
+
+
 class RegistrationSerializer(serializers.Serializer):
     class Meta:
         model = User
@@ -347,27 +348,26 @@ class ProjectSettingsSerializer(serializers.Serializer):
             if project_settings_data['lattice_type'] == 'he' or project_settings_data['lattice_type'] == 'sq':
                 json_settings_valid = True
                 self.gen_args = [project_settings_data['lattice_type'], str(project_settings_data['box_size'])]
-        elif project_settings_data['generation_method'] == 'generate-folded' or project_settings_data['generation_method'] == 'generate-sa':
+        elif project_settings_data['generation_method'] == 'generate-folded' \
+                or project_settings_data['generation_method'] == 'generate-sa':
             json_settings_valid = True
             self.gen_args = [str(project_settings_data['box_size'])]
 
         if not json_settings_valid:
             raise serializers.ValidationError(INVALID_GENERATION_SETTINGS)
 
-        # If sequence dependence is to be used, set this to 0 and specify seq_dep_file.
-        use_average_seq = project_settings_data['use_average_seq']
-        if not use_average_seq or int(use_average_seq) == 0:
-            seq_dep_file = project_settings_data['seq_dep_file']
-            seq_dep_file_path = os.path.join(project_path, str(seq_dep_file))
-            if not seq_dep_file or not os.path.isfile(seq_dep_file_path):
-                raise serializers.ValidationError(INPUT_SETTINGS_INVALID)
-
         # if 1, must set external_forces_file
         external_forces = project_settings_data['external_forces']
         if external_forces or int(external_forces) == 1:
-            external_forces_file = project_settings_data['external_forces_file']
-            external_forces_file_path = os.path.join(project_path, str(external_forces_file))
-            if (int(external_forces) == 1 and not external_forces_file) or not os.path.isfile(external_forces_file_path):
+            project_settings_data['external_forces_file'] = ProjectFile.EXTERNAL_FORCES.value
+            if not server.project_file_exists(project_id, ProjectFile.EXTERNAL_FORCES):
+                raise serializers.ValidationError(INPUT_SETTINGS_INVALID)
+
+        # If sequence dependence is to be used, set this to 0 and specify seq_dep_file.
+        use_average_seq = project_settings_data['use_average_seq']
+        if not use_average_seq or int(use_average_seq) == 0:
+            project_settings_data['seq_dep_file'] = ProjectFile.SEQUENCE_DEPENDENT_PARAMETERS.value
+            if not server.project_file_exists(project_id, ProjectFile.SEQUENCE_DEPENDENT_PARAMETERS):
                 raise serializers.ValidationError(INPUT_SETTINGS_INVALID)
 
         # if print_red_conf_every > 0
