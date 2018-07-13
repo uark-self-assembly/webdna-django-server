@@ -25,12 +25,15 @@ urlpatterns = [
     # /token-auth
     url(r'^api/token-auth/', obtain_jwt_token),
     url(r'^api/token-refresh', refresh_jwt_token),
+
     # /users
     path('api/users/', users.UserView.as_view()),
     path('api/users/login/', users.LoginView.as_view()),
     path('api/users/register/', users.RegistrationView.as_view()),
-    path('api/users/<uuid:user_id>/scripts/', scripts.ScriptList.as_view()),
-    path('api/users/<uuid:user_id>/scripts/<uuid:id>/', scripts.ScriptView.as_view()),
+
+    # /scripts
+    path('api/scripts/', scripts.ScriptList.as_view()),
+    path('api/scripts/<uuid:id>/', scripts.ScriptView.as_view()),
 
     # /projects
     path('api/projects/', projects.ProjectList.as_view()),

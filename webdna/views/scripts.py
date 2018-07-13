@@ -12,9 +12,9 @@ from ..serializers import *
 from ..util.jwt import *
 
 
-# URL: /api/users/<uuid:user_id>/scripts/<uuid:id>
+# URL: /api/scripts/<uuid:id>
 class ScriptView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsAuthenticated, IsUser, IsScriptOwner, ]
+    permission_classes = [IsAuthenticated, IsScriptOwner, ]
     queryset = Script.objects.all()
     serializer_class = ScriptSerializer
     lookup_field = 'id'
@@ -41,13 +41,16 @@ class ScriptView(generics.RetrieveUpdateDestroyAPIView):
             return ErrorResponse.make(errors=serialized_body.errors)
 
 
-# URL: /api/users/<uuid:user_id>/scripts/
+# URL: /api/scripts/
 class ScriptList(generics.CreateAPIView, generics.ListAPIView):
-    permission_classes = [IsAuthenticated, IsUser, ]
-    queryset = Script.objects.all()
+    permission_classes = [IsAuthenticated, ]
     serializer_class = ScriptSerializer
     parser_classes = (MultiPartParser,)
     lookup_field = 'user_id'
+
+    def get_queryset(self):
+        user = self.request.user
+        return Script.objects.filter(user_id=user.id)
 
     def post(self, request, *args, **kwargs):
         self.check_permissions(request)
@@ -77,7 +80,6 @@ class ScriptList(generics.CreateAPIView, generics.ListAPIView):
             return ErrorResponse.make(errors=serialized_body.errors)
 
     def get(self, request, *args, **kwargs):
-        self.check_permissions(request)
         response = generics.ListAPIView.get(self, request, args, kwargs)
         return ObjectResponse.make(response=response)
 

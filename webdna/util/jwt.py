@@ -19,15 +19,6 @@ class IsProjectOwner(permissions.BasePermission):
                                 'project_id': obj.id})
 
 
-class IsUser(permissions.BasePermission):
-    def has_permission(self, request, view):
-        if request.user.id == view.kwargs['user_id']:
-            return True
-        raise PermissionDenied({'message': 'User token does not correspond to request',
-                                'user_id': request.user.id,
-                                'request_user_id': view.kwargs['user_id']})
-
-
 class IsScriptOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if obj.user == request.user:
