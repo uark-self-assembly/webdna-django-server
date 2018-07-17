@@ -162,6 +162,7 @@ class SettingsView(BaseProjectView, generics.RetrieveUpdateAPIView):
     def clean_settings_dictionary(settings_dictionary: Dict):
         settings_dictionary.pop('generation_method', None)
         settings_dictionary.pop('lattice_type', None)
+        settings_dictionary.pop('execution_time', None)
 
     def get(self, request, *args, **kwargs):
         self.check_object_permissions(request, self.get_object())
@@ -188,6 +189,10 @@ class SettingsView(BaseProjectView, generics.RetrieveUpdateAPIView):
             settings_data: Dict = project_settings_serializer.validated_data.copy()
             SettingsView.clean_settings_dictionary(settings_data)
 
+            project_execution_time = project_settings_serializer.validated_data['execution_time']
+            if project_execution_time is not None:
+                settings_data['steps'] = project_util.MAX_STEPS
+
             input_file_status = file_util.generate_input_file(project_id, settings_data)
 
             project_generation = project_util.Generation(
@@ -196,6 +201,7 @@ class SettingsView(BaseProjectView, generics.RetrieveUpdateAPIView):
 
             existing_project_settings = project_util.get_project_settings(project_id)
             existing_project_settings.generation = project_generation
+            existing_project_settings.execution_time = project_execution_time
             project_util.save_project_settings(project_id, existing_project_settings)
 
             if input_file_status == MISSING_PROJECT_FILES:
@@ -232,7 +238,9 @@ class ExecutionView(BaseProjectView):
 
             if os.path.isdir(project_folder_path):
                 if project_util.is_executable(project_id, regenerate):
-                    tasks.execute_sim.delay(job.id, project_id, request.user.id, regenerate)
+                    project_settings = project_util.get_project_settings(project_id)
+                    tasks.execute_sim.delay(job.id, project_id, request.user.id, regenerate,
+                                            execution_time=project_settings.execution_time)
                     return ExecutionResponse.make()
                 else:
                     job.delete()

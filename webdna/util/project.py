@@ -10,6 +10,8 @@ from typing import List, Dict, Optional
 from webdna.defaults import ProjectFile
 from webdna.models import Project
 
+MAX_STEPS = 2000000000
+
 
 class Generation:
     def __init__(self, method: str = None, arguments: List = None, orig: 'Generation' = None, dictionary: Dict = None):
@@ -45,7 +47,8 @@ class Generation:
 
 
 class ProjectSettings:
-    def __init__(self, name: str, generation: Optional[Generation] = None, script_chain: Optional[str] = None):
+    def __init__(self, name: str, generation: Optional[Generation] = None, script_chain: Optional[str] = None,
+                 execution_time: Optional[int] = None):
         self.name = name
         if generation:
             self.generation = Generation(orig=generation)
@@ -55,6 +58,10 @@ class ProjectSettings:
             self.script_chain = script_chain
         else:
             self.script_chain = None
+        if execution_time:
+            self.execution_time = execution_time
+        else:
+            self.execution_time = None
 
 
 def get_project_settings(project_id: str) -> ProjectSettings:

@@ -383,6 +383,7 @@ class ProjectSettingsSerializer(serializers.Serializer):
     # Project json file settings
     generation_method = serializers.CharField(max_length=20, required=True)
     lattice_type = serializers.CharField(max_length=2, default='')
+    execution_time = serializers.IntegerField(default=None)
 
     # Generation options
     box_size = serializers.IntegerField(min_value=1, default=20)  # box side

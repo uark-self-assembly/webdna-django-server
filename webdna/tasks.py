@@ -11,6 +11,7 @@ import webdna.util.oxdna as oxdna
 import webdna.util.server as server
 import webdna.util.project as project_util
 
+from subprocess import TimeoutExpired
 from webdna.models import *
 from webdna_django_server.celery import app
 
@@ -52,7 +53,8 @@ def generate_initial_configuration(project_id: str, log_file_path: str) -> str:
 
 
 @app.task()
-def execute_sim(job_id: str, project_id: str, user_id: str, should_regenerate: bool, fresh_execution=True):
+def execute_sim(job_id: str, project_id: str, user_id: str, should_regenerate: bool, fresh_execution=True,
+                execution_time=None):
     job = Job(
         id=job_id, process_name=execute_sim.request.id, start_time=timezone.now(), finish_time=None, terminated=False)
     job.save(update_fields=['process_name', 'start_time', 'finish_time', 'terminated'])
@@ -73,7 +75,12 @@ def execute_sim(job_id: str, project_id: str, user_id: str, should_regenerate: b
     stdout_log_file = open(file=stdout_file_path, mode='w')
 
     process = subprocess.Popen(['oxDNA', 'input.txt'], cwd=project_folder_path, stdout=stdout_log_file)
-    process.wait()
+
+    try:
+        process.wait(timeout=execution_time)
+    except TimeoutExpired as ex:
+        process.terminate()
+        print("Simulation wall time of " + str(execution_time) + "s reached for project: " + project_id)
 
     stdout_log_file.close()
 
@@ -91,7 +98,7 @@ def execute_sim(job_id: str, project_id: str, user_id: str, should_regenerate: b
 @app.task()
 def execute_output_analysis(project_id: str, user_id: str):
     project_settings = project_util.get_project_settings(project_id)
-    if len(project_settings.script_chain) == 0:
+    if project_settings.script_chain is None:
         return
 
     print("Running analysis scripts for project: " + project_id)
