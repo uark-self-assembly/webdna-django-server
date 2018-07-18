@@ -30,7 +30,7 @@ class FileUploadView(generics.GenericAPIView):
     lookup_field = 'id'
     lookup_url_kwarg = 'project_id'
 
-    def put(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         self.check_object_permissions(request, self.get_object())
         project_existence_serializer = ProjectExistenceSerializer(data=kwargs)
         if project_existence_serializer.is_valid():

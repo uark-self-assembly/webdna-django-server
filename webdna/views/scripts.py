@@ -55,7 +55,7 @@ class ScriptList(generics.CreateAPIView, generics.ListAPIView):
     def post(self, request, *args, **kwargs):
         self.check_permissions(request)
         upload_data = request.data
-        upload_data['user'] = str(kwargs['user_id'])
+        upload_data['user'] = str(request.user.id)
 
         serialized_body = ScriptUploadSerializer(data=upload_data)
         if serialized_body.is_valid():
