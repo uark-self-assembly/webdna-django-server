@@ -36,8 +36,6 @@ def generate_folded(project_id: str, generation: Generation, log_file_path: str)
 
     project_folder_path = server.get_project_folder_path(project_id)
 
-    print(generation.arguments)
-
     if log_file_path is not None:
         log = open(file=log_file_path, mode='w')
         process = subprocess.Popen(
@@ -54,8 +52,6 @@ def generate_folded(project_id: str, generation: Generation, log_file_path: str)
     result_code = process.wait()
     if log_file_path is not None:
         log.close()
-
-    print('result was {}'.format(result_code))
 
     return result_code == 0
 
