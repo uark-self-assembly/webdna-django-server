@@ -47,7 +47,7 @@ class Generation:
 
 
 class ProjectSettings:
-    def __init__(self, name: str, generation: Optional[Generation] = None, script_chain: Optional[str] = None,
+    def __init__(self, name: str, generation: Optional[Generation] = None, script_chain: Optional[List[str]] = None,
                  execution_time: Optional[int] = None):
         self.name = name
         if generation:

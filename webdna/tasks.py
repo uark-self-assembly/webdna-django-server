@@ -103,7 +103,7 @@ def execute_output_analysis(project_id: str, user_id: str):
 
     print("Running analysis scripts for project: " + project_id)
 
-    scripts = [x.strip() for x in project_settings.script_chain.split(',')]
+    scripts = project_settings.script_chain
 
     analysis_folder_path = server.get_analysis_folder_path(project_id)
 

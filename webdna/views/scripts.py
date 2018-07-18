@@ -167,15 +167,17 @@ class ScriptChainView(generics.GenericAPIView):
         self.check_object_permissions(self.request, self.get_object())
         request_data = {
             'project_id': kwargs['project_id'],
-            'script_list': request.data.get('script_list', None)
+            'scripts': request.data.get('scripts', None)
         }
         serialized_body = ScriptChainSerializer(data=request_data)
         if serialized_body.is_valid():
             project_id = serialized_body.validated_data['project_id']
             project_settings = get_project_settings(project_id)
-            script_list = serialized_body.validated_data['script_list']
+            scripts = serialized_body.validated_data['scripts']
 
-            project_settings.script_chain = script_list
+            print(scripts)
+
+            project_settings.script_chain = scripts
             save_project_settings(project_id, project_settings)
 
             return DefaultResponse.make()

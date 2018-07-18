@@ -476,7 +476,7 @@ class ScriptChainSerializer(serializers.Serializer):
         fields = 'id'
 
     project_id = serializers.UUIDField()
-    script_list = serializers.CharField(max_length=1024, required=True)
+    scripts = serializers.ListField(required=True, child=serializers.CharField())
     fetched_project = None
 
     def validate(self, data):
@@ -488,10 +488,10 @@ class ScriptChainSerializer(serializers.Serializer):
             raise serializers.ValidationError(PROJECT_NOT_FOUND)
 
         self.fetched_project = fetched[0]
-        scripts = [x.strip() for x in data['script_list'].split(',')]
+        script_ids = data['scripts']
 
-        for script in scripts:
-            fetched_script = Script.objects.all().filter(id=script)
+        for script_id in script_ids:
+            fetched_script = Script.objects.all().filter(id=script_id)
             if not fetched_script:
                 raise serializers.ValidationError(CHAIN_SCRIPT_NOT_FOUND)
 
