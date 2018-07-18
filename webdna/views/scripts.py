@@ -85,7 +85,7 @@ class ScriptList(generics.CreateAPIView, generics.ListAPIView):
 
 
 # URL: /api/projects/<uuid:project_id>/userlog
-class UserLogView(generics.GenericAPIView):
+class AnalysisOutputView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsProjectOwner, ]
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
@@ -105,7 +105,7 @@ class UserLogView(generics.GenericAPIView):
 
             if os.path.isfile(file_path):
                 with open(file_path, 'rb') as output_file:
-                    response = output_file.readlines()
+                    response = output_file.read()
 
                 return ObjectResponse.make(obj=response)
             else:
@@ -123,7 +123,7 @@ class AnalysisExecutionView(generics.GenericAPIView):
     lookup_field = 'id'
     lookup_url_kwarg = 'project_id'
 
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         self.check_object_permissions(self.request, self.get_object())
         analysis_data = {
             'project_id': kwargs['project_id']
@@ -174,8 +174,6 @@ class ScriptChainView(generics.GenericAPIView):
             project_id = serialized_body.validated_data['project_id']
             project_settings = get_project_settings(project_id)
             scripts = serialized_body.validated_data['scripts']
-
-            print(scripts)
 
             project_settings.script_chain = scripts
             save_project_settings(project_id, project_settings)

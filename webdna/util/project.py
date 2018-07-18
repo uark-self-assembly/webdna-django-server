@@ -21,16 +21,17 @@ class Generation:
             self.load(dictionary)
         else:
             self.method: str = method
-            self.arguments: List = arguments
-            self.files = None
-            if method == 'generate-sa' or method == 'generate-folded':
-                self.files = ProjectFile.SEQUENCE.value
-                self.arguments.append(self.files)
-                self.arguments.insert(0, method + '.py')
+            self.arguments: List = []
+            self.files = []
+            if method == 'generate-sa':
+                self.files = [ProjectFile.SEQUENCE.value]
+                self.arguments = ['generate-sa.py'] + arguments + self.files
+            elif method == 'generate-folded':
+                self.files = [ProjectFile.SEQUENCE.value]
+                self.arguments = ['generate-folded.py'] + arguments + self.files
             elif method == 'cadnano-interface':
-                self.files = ProjectFile.CADNANO.value
-                self.arguments.insert(0, self.files)
-                self.arguments.insert(0, self.method + '.py')
+                self.files = [ProjectFile.CADNANO.value]
+                self.arguments = ['cadnano_interface.py'] + self.files + arguments
 
             if self.files is None:
                 raise ValueError('Value of method argument not valid')
@@ -72,6 +73,13 @@ def get_project_settings(project_id: str) -> ProjectSettings:
 def save_project_settings(project_id: str, project_settings: ProjectSettings):
     project_settings_file_path = server.get_project_file(project_id, ProjectFile.SETTINGS)
     file_util.write_string_to_file(jsonpickle.encode(project_settings), project_settings_file_path)
+
+
+def add_settings(project_id: str, settings: Dict):
+    project_settings = get_project_settings(project_id)
+    if project_settings is not None and project_settings.generation is not None:
+        if project_settings.generation.method:
+            settings['generation_method'] = project_settings.generation.method
 
 
 def initialize_project(project: Project):

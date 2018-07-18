@@ -22,39 +22,39 @@ from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token
 urlpatterns = [
 
     # Navigate here to get JSON token
-    # /token-auth
-    url(r'^api/token-auth/', obtain_jwt_token),
-    url(r'^api/token-refresh', refresh_jwt_token),
+    # /token-*/
+    path('api/token-auth/', obtain_jwt_token),
+    path('api/token-refresh/', refresh_jwt_token),
 
-    # /users
+    # /users/*
     path('api/users/', users.UserView.as_view()),
     path('api/users/login/', users.LoginView.as_view()),
     path('api/users/register/', users.RegistrationView.as_view()),
     path('api/users/profile/', users.ProfileView.as_view()),
     path('api/users/change-password/', users.ChangePasswordView.as_view()),
 
-    # /scripts
+    # /scripts/*
     path('api/scripts/', scripts.ScriptList.as_view()),
     path('api/scripts/<uuid:id>/', scripts.ScriptView.as_view()),
 
-    # /projects
+    # /projects/*
     path('api/projects/', projects.ProjectList.as_view()),
     path('api/projects/<uuid:id>/', projects.ProjectView.as_view()),
 
-    # /projects/{id}
+    # /projects/{id}/*
     path('api/projects/<uuid:project_id>/current-output/', projects.OutputView.as_view()),
     path('api/projects/<uuid:project_id>/settings/', projects.SettingsView.as_view()),
     path('api/projects/<uuid:project_id>/generate-visualization/', projects.GenerateVisualizationView.as_view()),
     path('api/projects/<uuid:project_id>/duplicate/', projects.DuplicateProjectView.as_view()),
     path('api/projects/<uuid:project_id>/execute-analysis/', scripts.AnalysisExecutionView.as_view()),
+    path('api/projects/<uuid:project_id>/analysis-output/', scripts.AnalysisOutputView.as_view()),
+    path('api/projects/<uuid:project_id>/script-chain/', scripts.ScriptChainView.as_view()),
 
-    # /projects/{id}/simulation
+    # /projects/{id}/simulation/*
     path('api/projects/<uuid:project_id>/simulation/execute/', projects.ExecutionView.as_view()),
     path('api/projects/<uuid:project_id>/simulation/terminate/', projects.TerminationView.as_view()),
-    path('api/projects/<uuid:project_id>/userlog/', scripts.UserLogView.as_view()),
-    path('api/projects/<uuid:project_id>/scriptchain/', scripts.ScriptChainView.as_view()),
 
-    # /projects/{id}/files
+    # /projects/{id}/files/*
     path('api/projects/<uuid:project_id>/files/upload/', projects.FileUploadView.as_view()),
     path('api/projects/<uuid:project_id>/files/<str:file_type>/download/', projects.DownloadProjectFileView.as_view()),
     path('api/projects/<uuid:project_id>/files/<str:file_type>/check/', projects.CheckProjectFileView.as_view()),

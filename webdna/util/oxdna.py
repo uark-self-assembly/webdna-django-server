@@ -6,14 +6,17 @@ from webdna.defaults import ProjectFile
 from webdna.util.project import Generation
 
 
-def generate_sa(project_folder_path: str, generation: Generation, log_file_path: str) -> bool:
+def generate_sa(project_id: str, generation: Generation, log_file_path: str) -> bool:
     log = None
+
+    project_folder_path = server.get_project_folder_path(project_id)
+
     if log_file_path is not None:
         log = open(file=log_file_path, mode='w')
         process = subprocess.Popen(
-                args=generation.arguments,
-                cwd=os.path.join(os.getcwd(), project_folder_path),
-                stderr=log
+            args=generation.arguments,
+            cwd=os.path.join(os.getcwd(), project_folder_path),
+            stderr=log
         )
     else:
         process = subprocess.Popen(
@@ -21,47 +24,57 @@ def generate_sa(project_folder_path: str, generation: Generation, log_file_path:
             cwd=os.path.join(os.getcwd(), project_folder_path)
         )
 
-    process.wait()
+    result_code = process.wait()
     if log_file_path is not None:
         log.close()
 
-    return True
+    return result_code == 0
 
 
-def generate_folded(project_folder_path: str, generation: Generation, log_file_path: str) -> bool:
+def generate_folded(project_id: str, generation: Generation, log_file_path: str) -> bool:
     log = None
+
+    project_folder_path = server.get_project_folder_path(project_id)
+
+    print(generation.arguments)
+
     if log_file_path is not None:
         log = open(file=log_file_path, mode='w')
         process = subprocess.Popen(
-            generation.arguments,
+            args=generation.arguments,
             cwd=os.path.join(os.getcwd(), project_folder_path),
             stderr=log
         )
     else:
         process = subprocess.Popen(
-            generation.arguments,
+            args=generation.arguments,
             cwd=os.path.join(os.getcwd(), project_folder_path)
         )
 
-    process.wait()
+    result_code = process.wait()
     if log_file_path is not None:
         log.close()
 
-    return True
+    print('result was {}'.format(result_code))
+
+    return result_code == 0
 
 
-def generate_cadnano_interface(project_folder_path: str, generation: Generation, log_file_path: str) -> bool:
+def generate_cadnano_interface(project_id: str, generation: Generation, log_file_path: str) -> bool:
     log = None
+
+    project_folder_path = server.get_project_folder_path(project_id)
+
     if log_file_path is not None:
         log = open(file=log_file_path, mode='w')
         process = subprocess.Popen(
-            generation.arguments,
+            args=generation.arguments,
             cwd=os.path.join(os.getcwd(), project_folder_path),
             stderr=log
         )
     else:
         process = subprocess.Popen(
-            generation.arguments,
+            args=generation.arguments,
             cwd=os.path.join(os.getcwd(), project_folder_path)
         )
 

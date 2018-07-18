@@ -348,10 +348,12 @@ class ProjectSettingsSerializer(serializers.Serializer):
             if project_settings_data['lattice_type'] == 'he' or project_settings_data['lattice_type'] == 'sq':
                 json_settings_valid = True
                 self.gen_args = [project_settings_data['lattice_type'], str(project_settings_data['box_size'])]
-        elif project_settings_data['generation_method'] == 'generate-folded' \
-                or project_settings_data['generation_method'] == 'generate-sa':
+        elif project_settings_data['generation_method'] == 'generate-sa':
             json_settings_valid = True
             self.gen_args = [str(project_settings_data['box_size'])]
+        elif project_settings_data['generation_method'] == 'generate-folded':
+            json_settings_valid = True
+            self.gen_args = ['-b', str(project_settings_data['box_size'])]
 
         if not json_settings_valid:
             raise serializers.ValidationError(INVALID_GENERATION_SETTINGS)

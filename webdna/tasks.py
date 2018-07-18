@@ -20,7 +20,6 @@ from webdna.defaults import ProjectFile, AnalysisFile
 
 @app.task()
 def generate_initial_configuration(project_id: str, log_file_path: str) -> str:
-    project_folder_path = server.get_project_folder_path(project_id)
     project_settings = project_util.get_project_settings(project_id)
     generation = project_settings.generation
 
@@ -28,7 +27,7 @@ def generate_initial_configuration(project_id: str, log_file_path: str) -> str:
         if not server.project_file_exists(project_id, ProjectFile.SEQUENCE):
             return messages.MISSING_PROJECT_FILES
 
-        if not oxdna.generate_sa(project_folder_path, generation, log_file_path):
+        if not oxdna.generate_sa(project_id, generation, log_file_path):
             return messages.INTERNAL_ERROR
         else:
             return messages.GENERATED_FILES
@@ -36,7 +35,7 @@ def generate_initial_configuration(project_id: str, log_file_path: str) -> str:
         if not server.project_file_exists(project_id, ProjectFile.SEQUENCE):
             return messages.MISSING_PROJECT_FILES
 
-        if not oxdna.generate_folded(project_folder_path, generation, log_file_path):
+        if not oxdna.generate_folded(project_id, generation, log_file_path):
             return messages.INTERNAL_ERROR
         else:
             return messages.GENERATED_FILES
@@ -44,7 +43,7 @@ def generate_initial_configuration(project_id: str, log_file_path: str) -> str:
         if not server.project_file_exists(project_id, ProjectFile.CADNANO):
             return messages.MISSING_PROJECT_FILES
 
-        if not oxdna.generate_cadnano_interface(project_folder_path, generation, log_file_path):
+        if not oxdna.generate_cadnano_interface(project_id, generation, log_file_path):
             return messages.INTERNAL_ERROR
         else:
             return messages.GENERATED_FILES
@@ -103,15 +102,17 @@ def execute_output_analysis(project_id: str, user_id: str):
 
     print("Running analysis scripts for project: " + project_id)
 
-    scripts = project_settings.script_chain
+    script_ids = project_settings.script_chain
+    scripts = []
 
     analysis_folder_path = server.get_analysis_folder_path(project_id)
 
-    for script in scripts:
-        fetched_script = Script.objects.all().filter(id=script)[0]
+    for script_id in script_ids:
+        fetched_script = Script.objects.all().filter(id=script_id)[0]
         script_name = fetched_script.file_name
         script_file_path = server.get_user_script(user_id, script_name)
         shutil.copy2(script_file_path, analysis_folder_path)
+        scripts.append(fetched_script)
 
     analysis_log_file_path = server.get_analysis_file_path(project_id, AnalysisFile.LOG)
 
@@ -122,8 +123,15 @@ def execute_output_analysis(project_id: str, user_id: str):
     try:
         # Execute the scripts in order
         for script in scripts:
-            script_file_path = server.get_analysis_script_file_path(project_id, script)
+            print('========================================')
+            print('running analysis script: ' + script.file_name)
+            print('========================================\n')
+
+            script_file_path = server.get_analysis_script_file_path(project_id, script.file_name)
             file_globals = runpy.run_path(script_file_path, init_globals=file_globals)
+
+            print()
+
     except Exception as e:
         print("Error caught in user script: " + str(e))
 

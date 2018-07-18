@@ -174,6 +174,8 @@ class SettingsView(BaseProjectView, generics.RetrieveUpdateAPIView):
             if input_data == MISSING_PROJECT_FILES:
                 return ObjectResponse.make(obj={})
 
+            project_util.add_settings(project_id, input_data)
+
             return ObjectResponse.make(obj=input_data)
         else:
             return ErrorResponse.make(errors=serialized_body.errors)
