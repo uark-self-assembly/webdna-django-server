@@ -95,6 +95,39 @@ If you'd rather run it from command line, just run the following:
 python3 manage.py runserver localhost:8000
 ```
 
+### RabbitMQ
+Before installing the Celery task server, we have to install and configure the RabbitMQ backend.
+
+This is a simple process that can be accomplished by following these steps:
+1. Open a terminal session and install RabbitMQ by running: ​
+    ```
+    sudo apt install rabbitmq-server
+    ```
+2. Start the RabbitMQ server with by running: 
+    ```
+    ​rabbitmq-server start
+    ```
+3. Create a new user for the django server by running:
+    ```
+    ​sudo rabbitmqctl add_user django_server productionpass
+    ```
+    (note that you will likely want a different password than "productionpass", but you will have to also change the 
+corresponding setting in the server's settings.py file to use your stronger password)
+4. Create a new virtual host named "webdna-production" by runnning: 
+    ```
+    ​sudo rabbitmqctl add_vhost webdna-production
+    ```
+5. Make sure the new user is labeled as an admin by running: ​
+    ```
+    sudo rabbitmqctl set_user_tags django_server administrator
+    ```
+6. Set the correct permissions for the django_server user on the new vhost by running:
+    ```
+    ​sudo rabbitmqctl set_permissions -p webdna-production django_server ".*" ".*" ".*"
+    ```
+    (Be sure to include the quotation marks in the command)
+7. RabbitMQ should be ready for server use.
+
 ### Celery
 
 This one is even easier. Celery is the server that handles executing jobs, but the server code is integrated with the Django code. To run the Celery server, just run the following:
