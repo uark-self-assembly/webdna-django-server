@@ -7,11 +7,13 @@ WebDNA is a user-centric software designed around the [oxDNA](https://dna.physic
 ## For the Developers
 You should adjust your environment according to below:
 1. **Add oxDNA/UTILS and oxDNA/build/bin to PATH.**<br>Modify `~/.profile` to include the following line:
+
     ```bash
     ...
     export PATH="/usr/local/bin/oxDNA/build/bin:/usr/local/bin/oxDNA/UTILS:$PATH"
     ```
 2. **Make the oxDNA UTIL scripts runnable.**<br>In the `UTILS` directory, run the following commands:
+
     ```bash
     chmod +wx *.py
     sed -i '1i #!/usr/bin/env python2' *.py
@@ -108,36 +110,41 @@ Before installing the Celery task server, we have to install and configure the R
 
 ### RabbitMQ Setup
 
-1. Open a terminal session and install RabbitMQ by running: ​
+1. Open a terminal session and install RabbitMQ by running:
+
     ```bash
     sudo apt install rabbitmq-server
     ```
 
 2. Start the RabbitMQ server with by running: 
+
     ```bash
-    ​rabbitmq-server start
+    rabbitmq-server start
     ```
 
 3. Create a new user for the django server by running:
+
     ```bash
-    ​sudo rabbitmqctl add_user django_server productionpass
+    sudo rabbitmqctl add_user django_server productionpass
     ```
 
     (Note: you will likely want a different password than "productionpass", but you will have to also change the corresponding setting in the server's settings.py file to use your stronger password)
 
 4. Create a new virtual host named "webdna-production" by runnning: 
+
     ```bash
-    ​sudo rabbitmqctl add_vhost webdna-production
+    sudo rabbitmqctl add_vhost webdna-production
     ```
 
-5. Make sure the new user is labeled as an admin by running: ​
+5. Make sure the new user is labeled as an admin by running:
+
     ```bash
     sudo rabbitmqctl set_user_tags django_server administrator
     ```
 
 6. Set the correct permissions for the django_server user on the new vhost by running:
     ```bash
-    ​sudo rabbitmqctl set_permissions -p webdna-production django_server ".*" ".*" ".*"
+    sudo rabbitmqctl set_permissions -p webdna-production django_server ".*" ".*" ".*"
     ```
     (Be sure to include the quotation marks in the command)
 7. RabbitMQ should be ready for server use.
