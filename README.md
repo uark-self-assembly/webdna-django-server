@@ -12,7 +12,7 @@ You should adjust your environment according to below:
     export PATH="/usr/local/bin/oxDNA/build/bin:/usr/local/bin/oxDNA/UTILS:$PATH"
     ```
 2. **Make the oxDNA UTIL scripts runnable.**<br>In the `UTILS` directory, run the following commands:
-    ```
+    ```bash
     chmod +wx *.py
     sed -i '1i #!/usr/bin/env python2' *.py
     ```
