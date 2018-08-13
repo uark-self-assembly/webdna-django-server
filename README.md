@@ -6,18 +6,25 @@ WebDNA is a user-centric software designed around the [oxDNA](https://dna.physic
 
 ## For the Developers
 You should adjust your environment according to below:
-1. Add oxDNA/UTILS and oxDNA/build/bin to PATH:
-    - Add `export PATH="/usr/local/bin/oxDNA/build/bin:/usr/local/bin/oxDNA/UTILS:$PATH"` to ~/.profile
-2. Run `chmod +wx *.py` in UTILS directory
-3. Also run `sed -i '1i #!/usr/bin/env python2' *.py` in the UTILS directory
+1. **Add oxDNA/UTILS and oxDNA/build/bin to PATH.**<br>Modify `~/.profile` to include the following line:
+    ```bash
+    ...
+    export PATH="/usr/local/bin/oxDNA/build/bin:/usr/local/bin/oxDNA/UTILS:$PATH"
+    ```
+2. **Make the oxDNA UTIL scripts runnable.**<br>In the `UTILS` directory, run the following commands:
+    ```
+    chmod +wx *.py
+    sed -i '1i #!/usr/bin/env python2' *.py
+    ```
 
 We'll outline here what all is needed to get this server up and running on your machine.
-There are two main components (so far):
+There are three main components (so far):
 
 1. A PostgreSQL database server
 2. This Django API
+3. The Celery task manager
 
-We'll set these things up in that order!
+We'll set these things up in that order.
 
 ### PostgreSQL Database Server
 
@@ -95,40 +102,47 @@ If you'd rather run it from command line, just run the following:
 python3 manage.py runserver localhost:8000
 ```
 
-### RabbitMQ
+## Setting up Celery
+
 Before installing the Celery task server, we have to install and configure the RabbitMQ backend.
 
-This is a simple process that can be accomplished by following these steps:
+### RabbitMQ Setup
+
 1. Open a terminal session and install RabbitMQ by running: ​
-    ```
+    ```bash
     sudo apt install rabbitmq-server
     ```
+
 2. Start the RabbitMQ server with by running: 
-    ```
+    ```bash
     ​rabbitmq-server start
     ```
+
 3. Create a new user for the django server by running:
-    ```
+    ```bash
     ​sudo rabbitmqctl add_user django_server productionpass
     ```
-    (note that you will likely want a different password than "productionpass", but you will have to also change the 
-corresponding setting in the server's settings.py file to use your stronger password)
+
+    (Note: you will likely want a different password than "productionpass", but you will have to also change the corresponding setting in the server's settings.py file to use your stronger password)
+
 4. Create a new virtual host named "webdna-production" by runnning: 
-    ```
+    ```bash
     ​sudo rabbitmqctl add_vhost webdna-production
     ```
+
 5. Make sure the new user is labeled as an admin by running: ​
-    ```
+    ```bash
     sudo rabbitmqctl set_user_tags django_server administrator
     ```
+
 6. Set the correct permissions for the django_server user on the new vhost by running:
-    ```
+    ```bash
     ​sudo rabbitmqctl set_permissions -p webdna-production django_server ".*" ".*" ".*"
     ```
     (Be sure to include the quotation marks in the command)
 7. RabbitMQ should be ready for server use.
 
-### Celery
+### Running Celery
 
 This one is even easier. Celery is the server that handles executing jobs, but the server code is integrated with the Django code. To run the Celery server, just run the following:
 
