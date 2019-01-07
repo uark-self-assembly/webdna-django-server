@@ -40,6 +40,12 @@ When you install PostgreSQL, make sure to create a database called "webdna" by r
 CREATE DATABASE webdna;
 ```
 
+Go ahead and connect to the database with:
+
+```sql
+\c webdna
+```
+
 We will then create a "schema" to keep all of our WebDNA tables organized. Run:
 
 ```sql
