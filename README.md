@@ -104,10 +104,10 @@ create a new configuration by clicking the "Configurations" drop-down in the top
   * In the configuration window, click the "+" on the far left and select "Django server".
   * Then, change the "Host" to "localhost". I would also name the configuration something pretty, like "Run Server".
 
-If you'd rather run it from command line, just run the following:
+If you'd rather run it from command line, just run the following, replacing `{LAN_IP}` with your local network IP:
 
 ```bash
-python3 manage.py runserver localhost:8000
+python3 manage.py runserver {LAN_IP}:8000
 ```
 
 ## Setting up Celery
