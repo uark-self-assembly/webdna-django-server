@@ -224,4 +224,18 @@ def generate_sim_files(project_id: str) -> bool:
 
     convert_pdb_to_xtc(input_file_path=original_pdb_path, output_file_path=xtc_file_path)
     convert_pdb_to_single_frame(input_file_path=original_pdb_path, output_file_path=pdb_file_path)
+    
+    #Need to verify that these are actually the folders AND that the python script is running in the correct directory
+    project_folder_path = server.get_project_folder_path(project_id)
+    input_path = project_folder_path + "/input.txt"
+    trajectory_path = project_fold_path + "/trajectory.dat"
+    topology_path = + "/topology.top"
+    
+	#[TODO] Need to find a way to pass this in instead of hardcoding it
+	analysis_folder_path = "/webdna-frontend/analysis/"
+	
+    os.system["python " + analysis_folder_path + "parsing/write_bond_data.py "+input_path+" "+trajectory_path+" "+topology_path]
+    os.system["cp " + xtc_file_path + " " + analysis_folder_path + "visualizer/pdbfiles/"]
+    os.system["cp " + pdb_file_path + " " + analysis_folder_path + "visualizer/pdbfiles/"]
+    
     return True
