@@ -235,6 +235,9 @@ def generate_sim_files(project_id: str) -> bool:
     analysis_folder_path = "/home/webdna-user/webdna-frontend/analysis/"
     
     os.system("python " + analysis_folder_path + "parsing/write_bond_data.py "+input_path+" "+trajectory_path+" "+topology_path)
+	os.system("echo cp bond_data.json " + analysis_folder_path + "data-files/" + project_id + ".json")
+    os.system("echo cp " + xtc_file_path + " " + analysis_folder_path + "visualizer/trjfiles/" + project_id + ".xtc")
+    os.system("echo cp " + pdb_file_path + " " + analysis_folder_path + "visualizer/pdbfiles/" + project_id + ".pdb")
     os.system("cp bond_data.json " + analysis_folder_path + "data-files/" + project_id + ".json")
     os.system("cp " + xtc_file_path + " " + analysis_folder_path + "visualizer/trjfiles/" + project_id + ".xtc")
     os.system("cp " + pdb_file_path + " " + analysis_folder_path + "visualizer/pdbfiles/" + project_id + ".pdb")
