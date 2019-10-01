@@ -231,9 +231,9 @@ def generate_sim_files(project_id: str) -> bool:
     trajectory_path = project_folder_path + "/generated.dat"
     topology_path = project_folder_path + "/generated.top"
     
-	#[TODO] Need to find a way to pass this in instead of hardcoding it
-	analysis_folder_path = "/webdna-frontend/analysis/"
-	
+    #[TODO] Need to find a way to pass this in instead of hardcoding it
+    analysis_folder_path = "/webdna-frontend/analysis/"
+    
     os.system["python " + analysis_folder_path + "parsing/write_bond_data.py "+input_path+" "+trajectory_path+" "+topology_path]
 	os.system["cp bond_data.json " + analysis_folder_path + "data-files/" + project_id + ".json"]
     os.system["cp " + xtc_file_path + " " + analysis_folder_path + "visualizer/trjfiles/" + project_id + ".xtc"]
