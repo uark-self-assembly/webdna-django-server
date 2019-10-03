@@ -228,9 +228,9 @@ def generate_sim_files(project_id: str) -> bool:
     
     #Need to verify that these are actually the folders AND that the python script is running in the correct directory
     project_folder_path = server.get_project_folder_path(project_id)
-    input_path = project_folder_path + "/input.txt"
-    trajectory_path = project_folder_path + "/generated.dat"
-    topology_path = project_folder_path + "/generated.top"
+    input_path = project_folder_path + "/" + ProjectFile.INPUT
+    trajectory_path = project_folder_path + "/" + ProjectFile.TRAJECTORY_DAT
+    topology_path = project_folder_path + "/" + ProjectFile.GENERATED_TOP
     
     #[TODO] Need to find a way to pass this in instead of hardcoding it
     analysis_folder_path = "/home/webdna-user/webdna-frontend/analysis/"
