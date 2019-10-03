@@ -235,6 +235,7 @@ def generate_sim_files(project_id: str) -> bool:
     #[TODO] Need to find a way to pass this in instead of hardcoding it
     analysis_folder_path = "/home/webdna-user/webdna-frontend/analysis/"
     
+	os.system("echo 'python " + analysis_folder_path + "parsing/write_bond_data.py "+input_path+" "+trajectory_path+" "+topology_path+"' >> /home/webdna-user/command.txt")
     os.system("python " + analysis_folder_path + "parsing/write_bond_data.py "+input_path+" "+trajectory_path+" "+topology_path+" >> /home/webdna-user/log.txt")
     
     if not os.path.exists( analysis_folder_path+"data-files/" )          : os.makedirs( analysis_folder_path+"data-files/" )
