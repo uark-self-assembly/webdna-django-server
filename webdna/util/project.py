@@ -235,7 +235,7 @@ def generate_sim_files(project_id: str) -> bool:
     #[TODO] Need to find a way to pass this in instead of hardcoding it
     analysis_folder_path = "/home/webdna-user/webdna-frontend/analysis/"
     
-    process = subprocess.Popen(["python",analysis_folder_path+"parsing/write_bond_data.py",input_path,trajectory_path,topology_path],cwd=project_folder)
+    process = subprocess.Popen(["python",analysis_folder_path+"parsing/write_bond_data.py",ProjectFile.INPUT.value,ProjectFile.TRAJECTORY_DAT.value,ProjectFile.GENERATED_TOP.value],cwd=project_folder)
     process.wait()
     
     if not os.path.exists( analysis_folder_path+"data-files/" )          : os.makedirs( analysis_folder_path+"data-files/" )
