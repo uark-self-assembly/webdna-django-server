@@ -1,0 +1,4 @@
+killall screen
+git pull
+screen -dmS django bash -c 'python3 manage.py runserver 10.5.53.235:8000; /bin/bash'
+screen -dmS celery bash -c './run_celery.sh; /bin/bash'
