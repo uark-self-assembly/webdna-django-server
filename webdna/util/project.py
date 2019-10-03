@@ -227,6 +227,7 @@ def generate_sim_files(project_id: str) -> bool:
     convert_pdb_to_single_frame(input_file_path=original_pdb_path, output_file_path=pdb_file_path)
     
     #Need to verify that these are actually the folders AND that the python script is running in the correct directory
+	project_folder = server.get_project_folder_path(project_id)
     input_path = server.get_project_file(project_id, ProjectFile.INPUT)
     trajectory_path = server.get_project_file(project_id, ProjectFile.TRAJECTORY_DAT)
     topology_path = server.get_project_file(project_id, ProjectFile.GENERATED_TOP)
@@ -234,16 +235,16 @@ def generate_sim_files(project_id: str) -> bool:
     #[TODO] Need to find a way to pass this in instead of hardcoding it
     analysis_folder_path = "/home/webdna-user/webdna-frontend/analysis/"
     
-    process = subprocess.Popen(["python",analysis_folder_path+"parsing/write_bond_data.py",input_path,trajectory_path,topology_path],cwd=project_folder_path)
+    process = subprocess.Popen(["python",analysis_folder_path+"parsing/write_bond_data.py",input_path,trajectory_path,topology_path],cwd=project_folder)
     process.wait()
     
     if not os.path.exists( analysis_folder_path+"data-files/" )          : os.makedirs( analysis_folder_path+"data-files/" )
     if not os.path.exists( analysis_folder_path+"visualizer/trjfiles/" ) : os.makedirs( analysis_folder_path+"visualizer/trjfiles/" )
     if not os.path.exists( analysis_folder_path+"visualizer/pdbfiles/" ) : os.makedirs( analysis_folder_path+"visualizer/pdbfiles/" )
     
-    copyfile( project_folder_path+"bond_data.json"	, analysis_folder_path+"data-files/"+project_id+".json" )
-    copyfile( xtc_file_path    						, analysis_folder_path+"visualizer/trjfiles/"+project_id+".xtc" )
-    copyfile( pdb_file_path    						, analysis_folder_path+"visualizer/pdbfiles/"+project_id+".pdb" )
+    copyfile( project_folder+"bond_data.json"	, analysis_folder_path+"data-files/"+project_id+".json" )
+    copyfile( xtc_file_path    					, analysis_folder_path+"visualizer/trjfiles/"+project_id+".xtc" )
+    copyfile( pdb_file_path    					, analysis_folder_path+"visualizer/pdbfiles/"+project_id+".pdb" )
 
     #DON'T FORGET TO CONVERT TABS TO SPACES
     
