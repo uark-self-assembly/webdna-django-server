@@ -242,7 +242,7 @@ def generate_sim_files(project_id: str) -> bool:
     if not os.path.exists( analysis_folder_path+"visualizer/trjfiles/" ) : os.makedirs( analysis_folder_path+"visualizer/trjfiles/" )
     if not os.path.exists( analysis_folder_path+"visualizer/pdbfiles/" ) : os.makedirs( analysis_folder_path+"visualizer/pdbfiles/" )
     
-    copyfile( project_folder+"bond_data.json"	, analysis_folder_path+"data-files/"+project_id+".json" )
+    copyfile( project_folder+"/bond_data.json"	, analysis_folder_path+"data-files/"+project_id+".json" )
     copyfile( xtc_file_path    					, analysis_folder_path+"visualizer/trjfiles/"+project_id+".xtc" )
     copyfile( pdb_file_path    					, analysis_folder_path+"visualizer/pdbfiles/"+project_id+".pdb" )
 
