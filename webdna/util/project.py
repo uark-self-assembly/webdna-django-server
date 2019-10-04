@@ -235,7 +235,7 @@ def generate_sim_files(project_id: str) -> bool:
         analysis_folder_path = "../webdna-frontend/analysis/"
         
         # Call bond parsing script to make bond_data.json file
-        process = subprocess.Popen(["python",analysis_folder_path+"parsing/write_bond_data.py",ProjectFile.INPUT.value,ProjectFile.TRAJECTORY_DAT.value,ProjectFile.GENERATED_TOP.value],cwd=project_folder)
+        process = subprocess.Popen(["python","../../../"+analysis_folder_path+"parsing/write_bond_data.py",ProjectFile.INPUT.value,ProjectFile.TRAJECTORY_DAT.value,ProjectFile.GENERATED_TOP.value],cwd=project_folder)
         process.wait()
         
         # Make analysis data sub directories if they don't already exist
