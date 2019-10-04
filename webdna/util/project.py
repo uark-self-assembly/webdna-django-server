@@ -227,7 +227,6 @@ def generate_sim_files(project_id: str) -> bool:
     convert_pdb_to_single_frame(input_file_path=original_pdb_path, output_file_path=pdb_file_path)
     
     #[TODO] Need a way to specify this path in case the directory structure of the server is difference (i.e. the reverse of the .env file in the frontend node.js server)
-    print( str(os.getcwd()) )
     if os.path.exists("../webdna-frontend/analysis"):
     
         # Need to verify that these are actually the folders AND that the python script is running in the correct directory
